@@ -1,0 +1,4647 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Immunization Tracker - Ghana Health Service</title>
+  
+  <!-- PWA Manifest -->
+  <link rel="manifest" href="manifest.json">
+  <meta name="theme-color" content="#006400">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <meta name="apple-mobile-web-app-title" content="Immunization Tracker">
+  <link rel="apple-touch-icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>💉</text></svg>">
+  
+  <link rel="icon" type="image/x-icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>💉</text></svg>">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  
+  <!-- Firebase SDK -->
+  <script type="module">
+    // Import the functions you need from the SDKs you need
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/12.5.0/firebase-app.js";
+    import { 
+      getAuth, 
+      createUserWithEmailAndPassword, 
+      signInWithEmailAndPassword, 
+      sendPasswordResetEmail,
+      signOut,
+      onAuthStateChanged
+    } from "https://www.gstatic.com/firebasejs/12.5.0/firebase-auth.js";
+    import { 
+      getFirestore, 
+      doc, 
+      setDoc, 
+      getDoc, 
+      updateDoc,
+      collection,
+      getDocs,
+      enableIndexedDbPersistence
+    } from "https://www.gstatic.com/firebasejs/12.5.0/firebase-firestore.js";
+
+    // Your web app's Firebase configuration - UPDATED
+    const firebaseConfig = {
+      apiKey: "AIzaSyC-pFlByaN5nz1lH2KT8JeGn04lrmKE9u8",
+      authDomain: "integrated-immunization-ae699.firebaseapp.com",
+      projectId: "integrated-immunization-ae699",
+      storageBucket: "integrated-immunization-ae699.firebasestorage.app",
+      messagingSenderId: "212804586645",
+      appId: "1:212804586645:web:35a66b9531e4983df89f9c"
+    };
+
+    // Initialize Firebase
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+    const db = getFirestore(app);
+
+    // Enable offline persistence
+    enableIndexedDbPersistence(db)
+      .catch((err) => {
+        console.log('Offline persistence error:', err);
+      });
+
+    // Make Firebase available globally
+    window.firebase = {
+      auth,
+      db,
+      createUserWithEmailAndPassword,
+      signInWithEmailAndPassword,
+      sendPasswordResetEmail,
+      signOut,
+      onAuthStateChanged,
+      doc,
+      setDoc,
+      getDoc,
+      updateDoc,
+      collection,
+      getDocs
+    };
+
+    console.log('Firebase initialized successfully');
+  </script>
+
+  <style>
+    /* CSS Variables for Ghana Health Service Theme - ENHANCED */
+    :root {
+      --ghs-green: #006400; /* Dark green - Ghana Health Service primary */
+      --ghs-green-dark: #004d00; /* Darker green */
+      --ghs-green-light: #e8f5e8; /* Light green */
+      --ghs-gold: #FFD700; /* Gold - Ghana flag color */
+      --ghs-red: #CE1126; /* Red - Ghana flag color */
+      --ghs-yellow: #FCD116; /* Yellow - Ghana flag color */
+      --ghs-blue: #0066CC; /* Blue for accents */
+      --ghs-white: #FFFFFF;
+      --ghs-light: #F8FAFC;
+      --ghs-gray: #64748B;
+      --ghs-dark: #1E293B;
+      --shadow: 0 4px 6px rgba(0, 0, 0, 0.07);
+      --shadow-lg: 0 10px 25px rgba(0, 0, 0, 0.1);
+      --radius: 12px;
+      --radius-lg: 16px;
+      --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    /* Base Styles */
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    }
+
+    body {
+      background: linear-gradient(135deg, #e8f5e8 0%, #f0f9ff 100%);
+      color: var(--ghs-dark);
+      line-height: 1.6;
+      min-height: 100vh;
+      font-weight: 400;
+    }
+
+    /* PWA Install Prompt */
+    .pwa-install-prompt {
+      position: fixed;
+      bottom: 20px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: var(--ghs-white);
+      padding: 16px 20px;
+      border-radius: var(--radius);
+      box-shadow: var(--shadow-lg);
+      z-index: 10000;
+      display: none;
+      align-items: center;
+      gap: 12px;
+      border: 2px solid var(--ghs-green);
+      max-width: 400px;
+      width: 90%;
+    }
+
+    .pwa-install-prompt.show {
+      display: flex;
+      animation: slideUp 0.3s ease;
+    }
+
+    .pwa-install-text {
+      flex: 1;
+      font-size: 14px;
+      font-weight: 500;
+    }
+
+    .pwa-install-buttons {
+      display: flex;
+      gap: 8px;
+    }
+
+    .pwa-install-btn {
+      padding: 8px 16px;
+      border: none;
+      border-radius: 6px;
+      font-weight: 600;
+      cursor: pointer;
+      font-size: 12px;
+    }
+
+    .pwa-install-btn.primary {
+      background: var(--ghs-green);
+      color: var(--ghs-white);
+    }
+
+    .pwa-install-btn.secondary {
+      background: var(--ghs-light);
+      color: var(--ghs-dark);
+    }
+
+    /* Service Worker Status */
+    .sw-status {
+      position: fixed;
+      top: 10px;
+      right: 10px;
+      background: var(--ghs-green);
+      color: var(--ghs-white);
+      padding: 6px 12px;
+      border-radius: 20px;
+      font-size: 12px;
+      font-weight: 600;
+      z-index: 10000;
+      display: none;
+    }
+
+    .sw-status.offline {
+      background: var(--ghs-red);
+    }
+
+    .sw-status.syncing {
+      background: var(--ghs-blue);
+    }
+
+    /* Rest of the CSS remains exactly the same as in your original code */
+    /* Authentication Screen Styles - ENHANCED */
+    #authScreen {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+      padding: 20px;
+      background: linear-gradient(135deg, var(--ghs-green) 0%, var(--ghs-green-dark) 50%, var(--ghs-gold) 100%);
+    }
+
+    .auth-container {
+      background: var(--ghs-white);
+      padding: 40px;
+      border-radius: var(--radius-lg);
+      box-shadow: var(--shadow-lg);
+      width: 100%;
+      max-width: 400px;
+      text-align: center;
+      border: 3px solid var(--ghs-gold);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .auth-container::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 5px;
+      background: linear-gradient(90deg, var(--ghs-red), var(--ghs-gold), var(--ghs-green));
+    }
+
+    .auth-logo {
+      font-size: 48px;
+      margin-bottom: 20px;
+      color: var(--ghs-green);
+    }
+
+    .auth-title {
+      color: var(--ghs-green);
+      margin-bottom: 10px;
+      font-size: 28px;
+      font-weight: 700;
+    }
+
+    .auth-subtitle {
+      color: var(--ghs-gray);
+      margin-bottom: 30px;
+      font-size: 16px;
+    }
+
+    .auth-form {
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+    }
+
+    .form-group {
+      position: relative;
+    }
+
+    .auth-input {
+      padding: 15px;
+      border: 2px solid #E2E8F0;
+      border-radius: var(--radius);
+      font-size: 16px;
+      transition: var(--transition);
+      width: 100%;
+    }
+
+    .auth-input:focus {
+      border-color: var(--ghs-green);
+      outline: none;
+      box-shadow: 0 0 0 3px rgba(0, 100, 0, 0.1);
+    }
+
+    .password-toggle {
+      position: absolute;
+      right: 15px;
+      top: 50%;
+      transform: translateY(-50%);
+      background: none;
+      border: none;
+      cursor: pointer;
+      color: var(--ghs-gray);
+      font-size: 18px;
+      transition: var(--transition);
+    }
+
+    .password-toggle:hover {
+      color: var(--ghs-green);
+    }
+
+    .auth-button {
+      padding: 15px;
+      background: linear-gradient(135deg, var(--ghs-green), var(--ghs-green-dark));
+      color: var(--ghs-white);
+      border: none;
+      border-radius: var(--radius);
+      font-size: 16px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: var(--transition);
+      box-shadow: 0 4px 12px rgba(0, 100, 0, 0.3);
+    }
+
+    .auth-button:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 20px rgba(0, 100, 0, 0.4);
+    }
+
+    .auth-button.secondary {
+      background: var(--ghs-light);
+      color: var(--ghs-dark);
+    }
+
+    .auth-button.secondary:hover {
+      background: #E2E8F0;
+    }
+
+    .auth-switch {
+      margin-top: 20px;
+      color: var(--ghs-gray);
+    }
+
+    .auth-switch a {
+      color: var(--ghs-green);
+      text-decoration: none;
+      font-weight: 600;
+    }
+
+    .auth-switch a:hover {
+      text-decoration: underline;
+    }
+
+    .forgot-password {
+      color: var(--ghs-blue);
+      text-decoration: none;
+      font-size: 14px;
+      margin-top: -10px;
+      align-self: flex-start;
+    }
+
+    .forgot-password:hover {
+      text-decoration: underline;
+    }
+
+    /* App Screen Styles */
+    #appScreen {
+      display: none;
+    }
+
+    .app-header {
+      background: linear-gradient(135deg, var(--ghs-green), var(--ghs-green-dark));
+      color: var(--ghs-white);
+      padding: 20px 0;
+      box-shadow: var(--shadow-lg);
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      backdrop-filter: blur(10px);
+      border-bottom: 3px solid var(--ghs-gold);
+    }
+
+    .header-content {
+      max-width: 1200px;
+      margin: 0 auto;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 0 24px;
+    }
+
+    .facility-info h1 {
+      font-size: 24px;
+      margin-bottom: 6px;
+      font-weight: 700;
+    }
+
+    .facility-name {
+      font-size: 14px;
+      color: rgba(255, 255, 255, 0.9);
+      font-weight: 400;
+    }
+
+    .user-actions {
+      display: flex;
+      align-items: center;
+      gap: 20px;
+    }
+
+    .user-name {
+      font-weight: 500;
+      background: rgba(255, 255, 255, 0.1);
+      padding: 8px 16px;
+      border-radius: 20px;
+      backdrop-filter: blur(10px);
+    }
+
+    .logout-btn {
+      background: rgba(206, 17, 38, 0.9);
+      color: var(--ghs-white);
+      border: none;
+      padding: 10px 20px;
+      border-radius: var(--radius);
+      cursor: pointer;
+      font-weight: 600;
+      transition: var(--transition);
+      backdrop-filter: blur(10px);
+    }
+
+    .logout-btn:hover {
+      background: #a00;
+      transform: translateY(-1px);
+    }
+
+    /* Navigation Menu */
+    .nav-menu {
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      margin-left: 40px;
+    }
+
+    .nav-item {
+      position: relative;
+    }
+
+    .nav-link {
+      color: var(--ghs-white);
+      text-decoration: none;
+      padding: 12px 16px;
+      border-radius: var(--radius);
+      font-weight: 500;
+      transition: var(--transition);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .nav-link:hover {
+      background: rgba(255, 255, 255, 0.1);
+    }
+
+    .nav-link.active {
+      background: rgba(255, 255, 255, 0.15);
+      font-weight: 600;
+    }
+
+    .dropdown-menu {
+      position: absolute;
+      top: 100%;
+      left: 0;
+      background: var(--ghs-white);
+      min-width: 220px;
+      border-radius: var(--radius);
+      box-shadow: var(--shadow-lg);
+      opacity: 0;
+      visibility: hidden;
+      transform: translateY(10px);
+      transition: var(--transition);
+      z-index: 1000;
+      border: 1px solid var(--ghs-gold);
+    }
+
+    .dropdown-menu.show {
+      opacity: 1;
+      visibility: visible;
+      transform: translateY(0);
+    }
+
+    .dropdown-item {
+      display: block;
+      padding: 12px 16px;
+      color: var(--ghs-dark);
+      text-decoration: none;
+      transition: var(--transition);
+      border-bottom: 1px solid #F1F5F9;
+    }
+
+    .dropdown-item:last-child {
+      border-bottom: none;
+    }
+
+    .dropdown-item:hover {
+      background: var(--ghs-green-light);
+      color: var(--ghs-green);
+    }
+
+    .dropdown-item.active {
+      background: var(--ghs-green-light);
+      color: var(--ghs-green);
+      font-weight: 600;
+    }
+
+    .menu-toggle {
+      display: none;
+      background: none;
+      border: none;
+      color: var(--ghs-white);
+      font-size: 24px;
+      cursor: pointer;
+      padding: 8px;
+      border-radius: 4px;
+    }
+
+    /* Mobile Menu */
+    .mobile-menu {
+      display: none;
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0, 0, 0, 0.9);
+      z-index: 2000;
+      backdrop-filter: blur(5px);
+    }
+
+    .mobile-menu.show {
+      display: block;
+    }
+
+    .mobile-menu-content {
+      background: var(--ghs-white);
+      width: 300px;
+      height: 100%;
+      padding: 24px;
+      overflow-y: auto;
+      animation: slideInLeft 0.3s ease;
+    }
+
+    @keyframes slideInLeft {
+      from { transform: translateX(-100%); }
+      to { transform: translateX(0); }
+    }
+
+    .mobile-menu-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 32px;
+      padding-bottom: 16px;
+      border-bottom: 1px solid #E2E8F0;
+    }
+
+    .mobile-menu-close {
+      background: none;
+      border: none;
+      font-size: 24px;
+      cursor: pointer;
+      color: var(--ghs-gray);
+    }
+
+    .mobile-nav-item {
+      margin-bottom: 8px;
+    }
+
+    .mobile-nav-link {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 16px;
+      color: var(--ghs-dark);
+      text-decoration: none;
+      border-radius: var(--radius);
+      transition: var(--transition);
+      font-weight: 500;
+    }
+
+    .mobile-nav-link:hover,
+    .mobile-nav-link.active {
+      background: var(--ghs-green-light);
+      color: var(--ghs-green);
+    }
+
+    .mobile-dropdown-menu {
+      margin-left: 20px;
+      margin-top: 8px;
+      display: none;
+    }
+
+    .mobile-dropdown-menu.show {
+      display: block;
+    }
+
+    .mobile-dropdown-item {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 12px 16px;
+      color: var(--ghs-gray);
+      text-decoration: none;
+      border-radius: var(--radius);
+      transition: var(--transition);
+      font-size: 14px;
+    }
+
+    .mobile-dropdown-item:hover,
+    .mobile-dropdown-item.active {
+      background: var(--ghs-green-light);
+      color: var(--ghs-green);
+    }
+
+    /* Notification and Loading Styles */
+    .offline-indicator {
+      background: linear-gradient(135deg, var(--ghs-yellow), var(--ghs-gold));
+      color: var(--ghs-dark);
+      text-align: center;
+      padding: 16px;
+      font-size: 14px;
+      font-weight: 500;
+      box-shadow: var(--shadow);
+    }
+
+    .notification {
+      padding: 18px 24px;
+      margin: 20px;
+      border-radius: var(--radius);
+      font-weight: 500;
+      box-shadow: var(--shadow);
+      animation: slideIn 0.3s ease;
+      border-left: 4px solid;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    @keyframes slideIn {
+      from { transform: translateY(-20px); opacity: 0; }
+      to { transform: translateY(0); opacity: 1; }
+    }
+
+    .notification.success {
+      background-color: #F0FDF4;
+      color: #166534;
+      border-left-color: var(--ghs-green);
+    }
+
+    .notification.error {
+      background-color: #FEF2F2;
+      color: #991B1B;
+      border-left-color: var(--ghs-red);
+    }
+
+    .notification.info {
+      background-color: #F0F9FF;
+      color: #1E40AF;
+      border-left-color: var(--ghs-blue);
+    }
+
+    .loading {
+      display: none;
+      text-align: center;
+      padding: 60px;
+    }
+
+    .spinner {
+      border: 4px solid #f3f3f3;
+      border-top: 4px solid var(--ghs-green);
+      border-radius: 50%;
+      width: 50px;
+      height: 50px;
+      animation: spin 1s linear infinite;
+      margin: 0 auto 20px;
+    }
+
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+
+    /* Quick Actions */
+    .quick-actions {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 20px;
+      padding: 24px;
+      max-width: 1200px;
+      margin: 0 auto;
+    }
+
+    .quick-actions button {
+      padding: 20px;
+      background: var(--ghs-white);
+      color: var(--ghs-green);
+      border: 1.5px solid #E2E8F0;
+      border-radius: var(--radius);
+      cursor: pointer;
+      font-weight: 600;
+      transition: var(--transition);
+      display: flex;
+      align-items: center;
+      justify-content: flex-start;
+      gap: 12px;
+      box-shadow: var(--shadow);
+      font-size: 16px;
+      text-align: left;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .quick-actions button::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 3px;
+      background: linear-gradient(90deg, var(--ghs-green), var(--ghs-gold));
+      transform: scaleX(0);
+      transition: transform 0.3s ease;
+    }
+
+    .quick-actions button:hover::before {
+      transform: scaleX(1);
+    }
+
+    .quick-actions button:hover {
+      transform: translateY(-3px);
+      box-shadow: var(--shadow-lg);
+      background: var(--ghs-white);
+      color: var(--ghs-green-dark);
+      border-color: var(--ghs-green-light);
+    }
+
+    /* Section Styles */
+    section {
+      background: var(--ghs-white);
+      margin: 24px;
+      padding: 32px;
+      border-radius: var(--radius-lg);
+      box-shadow: var(--shadow);
+      max-width: 1200px;
+      margin-left: auto;
+      margin-right: auto;
+      transition: var(--transition);
+      border: 1px solid rgba(255, 255, 255, 0.2);
+    }
+
+    section:hover {
+      box-shadow: var(--shadow-lg);
+    }
+
+    section h2 {
+      color: var(--ghs-green);
+      margin-bottom: 24px;
+      padding-bottom: 16px;
+      border-bottom: 2px solid #F1F5F9;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      font-size: 24px;
+    }
+
+    .section-toggle {
+      background: none;
+      border: none;
+      font-size: 24px;
+      cursor: pointer;
+      color: var(--ghs-gray);
+      margin-left: auto;
+      padding: 8px;
+      border-radius: 6px;
+      transition: var(--transition);
+    }
+
+    .section-toggle:hover {
+      background: var(--ghs-green-light);
+      color: var(--ghs-green);
+    }
+
+    /* Form Styles */
+    form {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 24px;
+    }
+
+    form label {
+      grid-column: 1;
+      display: flex;
+      align-items: center;
+      font-weight: 500;
+    }
+
+    form input, form select, form textarea, form button {
+      grid-column: 2;
+    }
+
+    form button {
+      grid-column: 1 / span 2;
+      justify-self: start;
+      padding: 16px 32px;
+      background: linear-gradient(135deg, var(--ghs-green), var(--ghs-green-dark));
+      color: var(--ghs-white);
+      border: none;
+      border-radius: var(--radius);
+      cursor: pointer;
+      font-weight: 600;
+      margin-top: 16px;
+      transition: var(--transition);
+      box-shadow: 0 4px 12px rgba(0, 100, 0, 0.3);
+    }
+
+    form button:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 20px rgba(0, 100, 0, 0.4);
+    }
+
+    /* Stats Section */
+    .stats-container {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+      gap: 24px;
+    }
+
+    .stat-card {
+      background: linear-gradient(135deg, var(--ghs-white), var(--ghs-light));
+      padding: 32px 24px;
+      border-radius: var(--radius);
+      text-align: center;
+      box-shadow: var(--shadow);
+      transition: var(--transition);
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .stat-card::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 4px;
+      background: linear-gradient(90deg, var(--ghs-green), var(--ghs-gold));
+    }
+
+    .stat-card:hover {
+      transform: translateY(-5px);
+      box-shadow: var(--shadow-lg);
+    }
+
+    .stat-card h3 {
+      font-size: 14px;
+      color: var(--ghs-gray);
+      margin-bottom: 12px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      font-weight: 600;
+    }
+
+    .stat-value {
+      font-size: 42px;
+      font-weight: 700;
+      color: var(--ghs-green);
+      margin-bottom: 8px;
+    }
+
+    /* Table Styles */
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 20px;
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+      border-radius: var(--radius);
+      overflow: hidden;
+      background: var(--ghs-white);
+    }
+
+    th, td {
+      padding: 16px 20px;
+      text-align: left;
+      border-bottom: 1px solid #F1F5F9;
+    }
+
+    th {
+      background: linear-gradient(135deg, var(--ghs-green), var(--ghs-green-dark));
+      color: var(--ghs-white);
+      font-weight: 600;
+      text-transform: uppercase;
+      font-size: 13px;
+      letter-spacing: 0.5px;
+    }
+
+    tr:nth-child(even) {
+      background-color: #F8FAFC;
+    }
+
+    tr:hover {
+      background-color: #F0FDF4;
+    }
+
+    /* Search Container */
+    .search-container {
+      margin-bottom: 24px;
+      position: relative;
+    }
+
+    .search-container input {
+      padding-left: 48px;
+      border-radius: 50px;
+      border: 1.5px solid #E2E8F0;
+    }
+
+    .search-container::before {
+      content: '🔍';
+      position: absolute;
+      left: 20px;
+      top: 50%;
+      transform: translateY(-50%);
+      z-index: 1;
+      font-size: 16px;
+    }
+
+    /* Action Buttons */
+    .action-buttons {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      margin-top: 24px;
+    }
+
+    .action-buttons button {
+      padding: 12px 20px;
+      background: var(--ghs-green);
+      color: var(--ghs-white);
+      border: none;
+      border-radius: var(--radius);
+      cursor: pointer;
+      font-weight: 600;
+      transition: var(--transition);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 14px;
+    }
+
+    .action-buttons button:hover {
+      background: var(--ghs-green-dark);
+      transform: translateY(-1px);
+      box-shadow: 0 4px 12px rgba(0, 100, 0, 0.3);
+    }
+
+    .action-buttons button.danger {
+      background: var(--ghs-red);
+    }
+
+    .action-buttons button.danger:hover {
+      background: #a00;
+      box-shadow: 0 4px 12px rgba(206, 17, 38, 0.3);
+    }
+
+    /* Tab Styles */
+    .tab-container {
+      margin-top: 24px;
+    }
+
+    .tab-buttons {
+      display: flex;
+      border-bottom: 2px solid #F1F5F9;
+      margin-bottom: 24px;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+
+    .tab-button {
+      padding: 14px 24px;
+      background: none;
+      border: none;
+      cursor: pointer;
+      font-weight: 600;
+      color: var(--ghs-gray);
+      border-bottom: 3px solid transparent;
+      transition: var(--transition);
+      border-radius: var(--radius) var(--radius) 0 0;
+    }
+
+    .tab-button.active {
+      color: var(--ghs-green);
+      border-bottom: 3px solid var(--ghs-green);
+      background: var(--ghs-green-light);
+    }
+
+    .tab-content {
+      display: none;
+      animation: fadeIn 0.5s ease;
+    }
+
+    .tab-content.active {
+      display: block;
+    }
+
+    /* Modal Styles */
+    .modal {
+      display: none;
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background-color: rgba(0, 0, 0, 0.5);
+      z-index: 1000;
+      overflow-y: auto;
+      animation: fadeIn 0.3s ease;
+      backdrop-filter: blur(5px);
+    }
+
+    .modal-content {
+      background-color: var(--ghs-white);
+      margin: 5% auto;
+      padding: 40px;
+      border-radius: var(--radius-lg);
+      width: 90%;
+      max-width: 900px;
+      position: relative;
+      box-shadow: var(--shadow-lg);
+      animation: slideUp 0.4s ease;
+      border: 1px solid rgba(255, 255, 255, 0.2);
+    }
+
+    @keyframes slideUp {
+      from { transform: translateY(50px); opacity: 0; }
+      to { transform: translateY(0); opacity: 1; }
+    }
+
+    .close {
+      position: absolute;
+      top: 20px;
+      right: 24px;
+      font-size: 28px;
+      font-weight: bold;
+      cursor: pointer;
+      color: var(--ghs-gray);
+      transition: var(--transition);
+      padding: 8px;
+      border-radius: 6px;
+    }
+
+    .close:hover {
+      color: var(--ghs-dark);
+      background: var(--ghs-green-light);
+    }
+
+    .booking-form {
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+    }
+
+    #vaccineSelection {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+      gap: 12px;
+      margin-bottom: 20px;
+    }
+
+    /* Footer */
+    footer {
+      text-align: center;
+      padding: 32px;
+      color: var(--ghs-gray);
+      font-size: 14px;
+      margin-top: 40px;
+      border-top: 1px solid #E2E8F0;
+      background: var(--ghs-white);
+    }
+
+    /* Progress Bar */
+    .progress-container {
+      width: 100%;
+      background-color: #E2E8F0;
+      border-radius: 10px;
+      margin: 12px 0;
+      overflow: hidden;
+    }
+
+    .progress-bar {
+      height: 10px;
+      background: linear-gradient(90deg, var(--ghs-green), var(--ghs-gold));
+      border-radius: 10px;
+      transition: width 0.5s ease;
+    }
+
+    /* Badge Styles */
+    .badge {
+      display: inline-block;
+      padding: 6px 12px;
+      border-radius: 20px;
+      font-size: 12px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .badge.success {
+      background-color: #DCFCE7;
+      color: #166534;
+    }
+
+    .badge.warning {
+      background-color: #FEF9C3;
+      color: #854D0E;
+    }
+
+    .badge.danger {
+      background-color: #FEE2E2;
+      color: #991B1B;
+    }
+
+    /* Card Styles */
+    .card {
+      background: var(--ghs-white);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      padding: 24px;
+      margin-bottom: 24px;
+      transition: var(--transition);
+      border: 1px solid rgba(255, 255, 255, 0.2);
+    }
+
+    .card:hover {
+      box-shadow: var(--shadow-lg);
+    }
+
+    /* Responsive Design */
+    @media (max-width: 1024px) {
+      .nav-menu {
+        display: none;
+      }
+
+      .menu-toggle {
+        display: block;
+      }
+
+      .header-content {
+        padding: 0 16px;
+      }
+    }
+
+    @media (max-width: 768px) {
+      .header-content {
+        flex-direction: column;
+        gap: 12px;
+        text-align: center;
+      }
+
+      .quick-actions {
+        grid-template-columns: 1fr;
+      }
+
+      form {
+        grid-template-columns: 1fr;
+      }
+
+      form label, form input, form select, form button {
+        grid-column: 1;
+      }
+
+      .stats-container {
+        grid-template-columns: 1fr 1fr;
+      }
+
+      .action-buttons {
+        flex-direction: column;
+      }
+
+      table {
+        display: block;
+        overflow-x: auto;
+      }
+
+      section {
+        margin: 16px;
+        padding: 24px;
+      }
+
+      .modal-content {
+        padding: 24px;
+        width: 95%;
+      }
+    }
+
+    @media (max-width: 480px) {
+      .stats-container {
+        grid-template-columns: 1fr;
+      }
+
+      .tab-buttons {
+        flex-direction: column;
+      }
+
+      .tab-button {
+        width: 100%;
+        text-align: left;
+      }
+
+      .modal-content {
+        padding: 20px;
+        width: 95%;
+      }
+    }
+
+    /* EPI Agenda Highlights */
+    .epi-agenda {
+      background: linear-gradient(135deg, var(--ghs-green), var(--ghs-green-dark));
+      color: var(--ghs-white);
+      padding: 32px;
+      border-radius: var(--radius);
+      margin: 24px 0;
+      box-shadow: var(--shadow);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .epi-agenda::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" opacity="0.1"><text x="50%" y="50%" font-size="80" text-anchor="middle" dominant-baseline="middle">💉</text></svg>');
+      background-size: 200px;
+    }
+
+    .epi-agenda h3 {
+      margin-bottom: 20px;
+      font-size: 20px;
+      font-weight: 700;
+    }
+
+    .epi-agenda ul {
+      list-style-type: none;
+      padding-left: 0;
+    }
+
+    .epi-agenda li {
+      padding: 12px 0;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      font-weight: 500;
+    }
+
+    .epi-agenda li:last-child {
+      border-bottom: none;
+    }
+
+    /* Ghana Health Service Logo Style */
+    .ghs-logo {
+      display: inline-flex;
+      align-items: center;
+      gap: 12px;
+      font-weight: 700;
+      color: var(--ghs-green);
+      font-size: 24px;
+    }
+
+    .ghs-logo::before {
+      content: "🏥";
+      font-size: 32px;
+    }
+
+    /* Settings Styles */
+    .settings-group {
+      margin-bottom: 32px;
+      padding-bottom: 24px;
+      border-bottom: 1px solid #E2E8F0;
+    }
+
+    .settings-group h3 {
+      color: var(--ghs-green);
+      margin-bottom: 20px;
+      font-size: 20px;
+      font-weight: 600;
+    }
+
+    .settings-options {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 20px;
+    }
+
+    .settings-option {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .settings-option input[type="checkbox"] {
+      width: 20px;
+      height: 20px;
+    }
+
+    .settings-option label {
+      margin-bottom: 0;
+      font-weight: 500;
+    }
+
+    /* Vaccine checkbox styling */
+    #vaccineSelection label {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 16px;
+      background: var(--ghs-light);
+      border-radius: var(--radius);
+      transition: var(--transition);
+      cursor: pointer;
+      font-weight: 500;
+    }
+
+    #vaccineSelection label:hover {
+      background: var(--ghs-green-light);
+      transform: translateY(-1px);
+    }
+
+    #vaccineSelection input[type="checkbox"] {
+      width: 20px;
+      height: 20px;
+    }
+
+    /* Required field styling */
+    .required::after {
+      content: " *";
+      color: var(--ghs-red);
+    }
+
+    /* Fixed action buttons */
+    .fixed-actions {
+      position: sticky;
+      bottom: 0;
+      background: var(--ghs-white);
+      padding: 16px;
+      border-top: 1px solid #E2E8F0;
+      display: flex;
+      gap: 12px;
+      justify-content: flex-end;
+      margin-top: 24px;
+    }
+
+    /* View options */
+    .view-options {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 16px;
+    }
+
+    .view-options button {
+      padding: 8px 16px;
+      border: 1px solid var(--ghs-green);
+      background: var(--ghs-white);
+      color: var(--ghs-green);
+      border-radius: 4px;
+      cursor: pointer;
+      transition: var(--transition);
+    }
+
+    .view-options button.active {
+      background: var(--ghs-green);
+      color: var(--ghs-white);
+    }
+
+    .view-options button:hover:not(.active) {
+      background: var(--ghs-green-light);
+    }
+
+    /* Advanced Search Styles */
+    .advanced-search {
+      background: var(--ghs-white);
+      padding: 20px;
+      border-radius: var(--radius);
+      margin-bottom: 20px;
+      box-shadow: var(--shadow);
+    }
+
+    .search-filters {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 15px;
+      margin-top: 15px;
+    }
+
+    .search-filters select, .search-filters input {
+      padding: 10px;
+      border: 1px solid #E2E8F0;
+      border-radius: 6px;
+      font-size: 14px;
+    }
+
+    /* Report Card Styles */
+    .report-card {
+      background: linear-gradient(135deg, var(--ghs-white), var(--ghs-light));
+      padding: 25px;
+      border-radius: var(--radius);
+      margin: 15px 0;
+      box-shadow: var(--shadow);
+      border-left: 4px solid var(--ghs-blue);
+    }
+
+    .report-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 15px;
+    }
+
+    .report-stats {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+      gap: 15px;
+    }
+
+    .report-stat {
+      text-align: center;
+      padding: 15px;
+      background: rgba(255, 255, 255, 0.7);
+      border-radius: 8px;
+    }
+
+    .report-value {
+      font-size: 24px;
+      font-weight: 700;
+      color: var(--ghs-green);
+    }
+
+    .report-label {
+      font-size: 12px;
+      color: var(--ghs-gray);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    /* Dropdown Styles */
+    .dropdown {
+      position: relative;
+      display: inline-block;
+    }
+
+    .dropdown-content {
+      display: none;
+      position: absolute;
+      background-color: var(--ghs-white);
+      min-width: 160px;
+      box-shadow: var(--shadow-lg);
+      z-index: 1;
+      border-radius: var(--radius);
+      overflow: hidden;
+    }
+
+    .dropdown-content a {
+      color: var(--ghs-dark);
+      padding: 12px 16px;
+      text-decoration: none;
+      display: block;
+      transition: var(--transition);
+    }
+
+    .dropdown-content a:hover {
+      background-color: var(--ghs-green-light);
+    }
+
+    .dropdown:hover .dropdown-content {
+      display: block;
+    }
+
+    .dropbtn {
+      background-color: var(--ghs-green);
+      color: var(--ghs-white);
+      padding: 8px 12px;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 14px;
+      transition: var(--transition);
+    }
+
+    .dropbtn:hover {
+      background-color: var(--ghs-green-dark);
+    }
+
+    /* Required field styling */
+    .required-field {
+      border: 1px solid var(--ghs-red) !important;
+      background-color: #FEF2F2;
+    }
+  </style>
+</head>
+<body>
+  <!-- PWA Install Prompt -->
+  <div class="pwa-install-prompt" id="pwaInstallPrompt">
+    <div class="pwa-install-text">
+      Install Immunization Tracker for better experience
+    </div>
+    <div class="pwa-install-buttons">
+      <button class="pwa-install-btn secondary" id="pwaInstallCancel">Not Now</button>
+      <button class="pwa-install-btn primary" id="pwaInstallConfirm">Install</button>
+    </div>
+  </div>
+
+  <!-- Service Worker Status -->
+  <div class="sw-status" id="swStatus">🔄 Online</div>
+
+  <!-- Authentication Screen -->
+  <div id="authScreen">
+    <div class="auth-container">
+      <div class="auth-logo">🏥</div>
+      <h1 class="auth-title">Immunization Tracker</h1>
+      <p class="auth-subtitle">Ghana Health Service - No Child Left Behind</p>
+      
+      <!-- Login Form -->
+      <form id="loginForm" class="auth-form">
+        <input type="email" id="loginEmail" class="auth-input" placeholder="Email" required>
+        
+        <div class="form-group">
+          <input type="password" id="loginPassword" class="auth-input" placeholder="Password" required>
+          <button type="button" class="password-toggle" onclick="togglePasswordVisibility('loginPassword', this)">👁️</button>
+        </div>
+        
+        <button type="submit" class="auth-button">Login</button>
+        <a href="#" class="forgot-password" onclick="showForgotPassword()">Forgot Password?</a>
+      </form>
+      
+      <!-- Signup Form -->
+      <form id="signupForm" class="auth-form" style="display: none;">
+        <input type="text" id="signupFacilityName" class="auth-input" placeholder="Facility Name" required>
+        <input type="email" id="signupEmail" class="auth-input" placeholder="Email" required>
+        
+        <div class="form-group">
+          <input type="password" id="signupPassword" class="auth-input" placeholder="Password" required>
+          <button type="button" class="password-toggle" onclick="togglePasswordVisibility('signupPassword', this)">👁️</button>
+        </div>
+        
+        <button type="submit" class="auth-button">Create Account</button>
+      </form>
+      
+      <!-- Forgot Password Form -->
+      <form id="forgotPasswordForm" class="auth-form" style="display: none;">
+        <input type="email" id="resetEmail" class="auth-input" placeholder="Enter your email" required>
+        <button type="submit" class="auth-button">Reset Password</button>
+        <button type="button" class="auth-button secondary" onclick="showLogin()">Back to Login</button>
+      </form>
+      
+      <div class="auth-switch">
+        <span id="switchText">Don't have an account? </span>
+        <a href="#" id="switchLink" onclick="toggleAuthForm()">Sign up</a>
+      </div>
+    </div>
+  </div>
+
+  <!-- Main App Screen -->
+  <div id="appScreen">
+    <!-- Header -->
+    <header class="app-header">
+      <div class="header-content">
+        <div class="facility-info">
+          <h1>🏥 Immunization Tracker</h1>
+          <span id="currentFacility" class="facility-name">Loading facility...</span>
+        </div>
+        
+        <!-- Desktop Navigation Menu -->
+        <nav class="nav-menu">
+          <div class="nav-item">
+            <a href="#" class="nav-link active" onclick="showSection('home')">
+              🏠 Home
+            </a>
+          </div>
+          
+          <div class="nav-item">
+            <a href="#" class="nav-link" onclick="showSection('registration')">
+              👶 Register
+            </a>
+          </div>
+          
+          <div class="nav-item dropdown">
+            <a href="#" class="nav-link" onclick="toggleDropdown('recordsDropdown')">
+              📋 Records
+            </a>
+            <div class="dropdown-menu" id="recordsDropdown">
+              <a href="#" class="dropdown-item" onclick="showSection('childHealthRegister')">Child Health Register</a>
+              <a href="#" class="dropdown-item" onclick="showSection('dashboard')">Immunization Dashboard</a>
+              <a href="#" class="dropdown-item" onclick="showTodayAppointments()">Today's Appointments</a>
+              <a href="#" class="dropdown-item" onclick="showDefaulters()">Defaulters List</a>
+            </div>
+          </div>
+          
+          <div class="nav-item dropdown">
+            <a href="#" class="nav-link" onclick="toggleDropdown('actionsDropdown')">
+              ⚡ Actions
+            </a>
+            <div class="dropdown-menu" id="actionsDropdown">
+              <a href="#" class="dropdown-item" onclick="showOutreachModal()">Outreach Planning</a>
+              <a href="#" class="dropdown-item" onclick="showFollowUpModal()">Follow-up Actions</a>
+              <a href="#" class="dropdown-item" onclick="showDataAnalytics()">View Analytics</a>
+              <a href="#" class="dropdown-item" onclick="generateMonthlyReportCard()">Monthly Report</a>
+            </div>
+          </div>
+          
+          <div class="nav-item">
+            <a href="#" class="nav-link" onclick="showSection('settings')">
+              ⚙️ Settings
+            </a>
+          </div>
+        </nav>
+        
+        <div class="user-actions">
+          <span id="currentUser" class="user-name">Loading user...</span>
+          <button class="menu-toggle" onclick="toggleMobileMenu()">☰</button>
+          <button onclick="logout()" class="logout-btn">🚪 Logout</button>
+        </div>
+      </div>
+    </header>
+
+    <!-- Mobile Navigation Menu -->
+    <div class="mobile-menu" id="mobileMenu">
+      <div class="mobile-menu-content">
+        <div class="mobile-menu-header">
+          <h3>Navigation</h3>
+          <button class="mobile-menu-close" onclick="toggleMobileMenu()">✕</button>
+        </div>
+        
+        <div class="mobile-nav-item">
+          <a href="#" class="mobile-nav-link active" onclick="showSection('home'); toggleMobileMenu();">
+            🏠 Home
+          </a>
+        </div>
+        
+        <div class="mobile-nav-item">
+          <a href="#" class="mobile-nav-link" onclick="showSection('registration'); toggleMobileMenu();">
+            👶 Register Child
+          </a>
+        </div>
+        
+        <div class="mobile-nav-item">
+          <a href="#" class="mobile-nav-link" onclick="toggleMobileDropdown('mobileRecordsDropdown')">
+            📋 Records ▶
+          </a>
+          <div class="mobile-dropdown-menu" id="mobileRecordsDropdown">
+            <a href="#" class="mobile-dropdown-item" onclick="showSection('childHealthRegister'); toggleMobileMenu();">Child Health Register</a>
+            <a href="#" class="mobile-dropdown-item" onclick="showSection('dashboard'); toggleMobileMenu();">Immunization Dashboard</a>
+            <a href="#" class="mobile-dropdown-item" onclick="showTodayAppointments(); toggleMobileMenu();">Today's Appointments</a>
+            <a href="#" class="mobile-dropdown-item" onclick="showDefaulters(); toggleMobileMenu();">Defaulters List</a>
+          </div>
+        </div>
+        
+        <div class="mobile-nav-item">
+          <a href="#" class="mobile-nav-link" onclick="toggleMobileDropdown('mobileActionsDropdown')">
+            ⚡ Actions ▶
+          </a>
+          <div class="mobile-dropdown-menu" id="mobileActionsDropdown">
+            <a href="#" class="mobile-dropdown-item" onclick="showOutreachModal(); toggleMobileMenu();">Outreach Planning</a>
+            <a href="#" class="mobile-dropdown-item" onclick="showFollowUpModal(); toggleMobileMenu();">Follow-up Actions</a>
+            <a href="#" class="mobile-dropdown-item" onclick="showDataAnalytics(); toggleMobileMenu();">View Analytics</a>
+            <a href="#" class="mobile-dropdown-item" onclick="generateMonthlyReportCard(); toggleMobileMenu();">Monthly Report</a>
+          </div>
+        </div>
+        
+        <div class="mobile-nav-item">
+          <a href="#" class="mobile-nav-link" onclick="showSection('settings'); toggleMobileMenu();">
+            ⚙️ Settings
+          </a>
+        </div>
+        
+        <div class="mobile-nav-item">
+          <a href="#" class="mobile-nav-link" onclick="openHelpModal(); toggleMobileMenu();">
+            ❓ Help
+          </a>
+        </div>
+      </div>
+    </div>
+
+    <!-- Offline Indicator -->
+    <div id="offlineIndicator" class="offline-indicator">
+      ⚠️ You are currently offline. The app will work with limited functionality.
+    </div>
+
+    <!-- Sync Status -->
+    <div id="syncStatus" class="notification info" style="display: none;">
+      🔄 Syncing data with cloud...
+    </div>
+
+    <!-- Notification Area -->
+    <div id="notificationArea"></div>
+
+    <!-- Loading Indicator -->
+    <div id="loadingIndicator" class="loading">
+      <div class="spinner"></div>
+      <p>Loading data...</p>
+    </div>
+
+    <!-- Home Section -->
+    <section id="home" class="active-section">
+      <!-- EPI Agenda Section -->
+      <div id="epiAgenda">
+        <h2>🎯 2030 EPI Agenda - No Child Left Behind</h2>
+        <div class="epi-agenda">
+          <h3>Key Objectives</h3>
+          <ul>
+            <li>✅ Achieve 95% immunization coverage for all vaccines</li>
+            <li>✅ Eliminate measles and rubella</li>
+            <li>✅ Ensure equitable access to immunization services</li>
+            <li>✅ Strengthen routine immunization systems</li>
+            <li>✅ Introduce new and underutilized vaccines</li>
+          </ul>
+        </div>
+        <div class="stats-container">
+          <div class="stat-card">
+            <h3>Coverage Target</h3>
+            <div class="stat-value">95%</div>
+            <div class="progress-container">
+              <div class="progress-bar" id="coverageProgress" style="width: 0%"></div>
+            </div>
+            <p id="coverageText">Current: 0%</p>
+          </div>
+          <div class="stat-card">
+            <h3>Zero-Dose Children</h3>
+            <div class="stat-value" id="zeroDoseChildren">0</div>
+            <p>Children with no vaccines</p>
+          </div>
+          <div class="stat-card">
+            <h3>Fully Immunized</h3>
+            <div class="stat-value" id="fullyImmunized">0</div>
+            <p>Children with all vaccines</p>
+          </div>
+          <div class="stat-card">
+            <h3>Dropout Rate</h3>
+            <div class="stat-value" id="dropoutRate">0%</div>
+            <p>BCG to Measles dropout</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Quick Actions -->
+      <div class="quick-actions">
+        <button onclick="showSection('registration')">➕ Register Child</button>
+        <button onclick="showSection('childHealthRegister')">📋 View Register</button>
+        <button onclick="showSection('dashboard')">📊 View Dashboard</button>
+        <button onclick="showSection('settings')">⚙️ Settings</button>
+        <button onclick="showTodayAppointments()">📅 Today's Appointments</button>
+        <button onclick="showOutreachModal()">📍 Outreach Planning</button>
+        <button onclick="showFollowUpModal()">📝 Follow-up Actions</button>
+        <button onclick="showDataAnalytics()">📈 View Analytics</button>
+        <button onclick="generateMonthlyReportCard()">📋 Monthly Report</button>
+        <button onclick="showCommunityAnalysis()">🏘️ Community Analysis</button>
+        <button onclick="syncData()">🔄 Sync Data</button>
+      </div>
+
+      <!-- Stats Section -->
+      <div id="stats">
+        <h2>📊 Facility Statistics</h2>
+        <div class="stats-container">
+          <div class="stat-card">
+            <h3>Total Children</h3>
+            <div class="stat-value" id="totalChildren">0</div>
+          </div>
+          <div class="stat-card">
+            <h3>Defaulters</h3>
+            <div class="stat-value" id="totalDefaulters">0</div>
+          </div>
+          <div class="stat-card">
+            <h3>Due Soon</h3>
+            <div class="stat-value" id="totalDueSoon">0</div>
+          </div>
+          <div class="stat-card">
+            <h3>Upcoming</h3>
+            <div class="stat-value" id="totalUpcoming">0</div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Section 1.0: Registration Form -->
+    <section id="registration">
+      <h2>👶 Register Child</h2>
+      <form id="registrationForm">
+        <label for="childName" class="required">Child's Name:</label>
+        <input type="text" id="childName" required>
+
+        <label for="dob" class="required">Date of Birth:</label>
+        <input type="date" id="dob" required>
+
+        <label for="sex" class="required">Sex:</label>
+        <select id="sex" required>
+          <option value="Male">Male</option>
+          <option value="Female">Female</option>
+        </select>
+
+        <label for="address" class="required">Address/Community:</label>
+        <input type="text" id="address" required>
+
+        <label for="contact">Contact (Caregiver):</label>
+        <input type="text" id="contact" placeholder="0241234567">
+
+        <label for="motherName" class="required">Mother's Name:</label>
+        <input type="text" id="motherName" required>
+
+        <label for="fatherName" class="required">Father's Name:</label>
+        <input type="text" id="fatherName" required>
+
+        <button type="submit">✅ Register Child</button>
+      </form>
+    </section>
+
+    <!-- Section 1.1: Child Health Register -->
+    <section id="childHealthRegister">
+      <h2>
+        📋 Child Health Register
+        <button class="section-toggle" onclick="toggleSection('childHealthRegister')">−</button>
+      </h2>
+      
+      <!-- Advanced Search -->
+      <div class="advanced-search">
+        <div class="search-container">
+          <input type="text" id="search" placeholder="Search by name, registration number, or community..." oninput="filterChildren()">
+        </div>
+        <div class="search-filters">
+          <select id="communityFilter" onchange="filterChildren()">
+            <option value="">All Communities</option>
+          </select>
+          <select id="statusFilter" onchange="filterChildren()">
+            <option value="">All Status</option>
+            <option value="zero-dose">Zero-Dose</option>
+            <option value="partially">Partially Immunized</option>
+            <option value="fully">Fully Immunized</option>
+          </select>
+          <select id="ageFilter" onchange="filterChildren()">
+            <option value="">All Ages</option>
+            <option value="0-6">0-6 Months</option>
+            <option value="7-12">7-12 Months</option>
+            <option value="13-24">13-24 Months</option>
+            <option value="25+">25+ Months</option>
+          </select>
+        </div>
+      </div>
+      
+      <table id="childTable">
+        <thead>
+          <tr>
+            <th>Reg No.</th>
+            <th>Name</th>
+            <th>DOB</th>
+            <th>Age</th>
+            <th>Sex</th>
+            <th>Community</th>
+            <th>Mother's Name</th>
+            <th>Father's Name</th>
+            <th>Contact</th>
+            <th>Status</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          <!-- Rows will be populated dynamically -->
+        </tbody>
+      </table>
+      
+      <div class="action-buttons">
+        <button onclick="exportToCSV()">💾 Export to CSV</button>
+        <button onclick="printRecords()">🖨️ Print Records</button>
+        <button onclick="backupData()">💽 Backup Data</button>
+        <button onclick="createEncryptedBackup()">🔐 Encrypted Backup</button>
+        <input type="file" id="restoreFile" accept=".json,.txt" style="display: none;">
+        <button onclick="document.getElementById('restoreFile').click()">📥 Restore Data</button>
+        <button onclick="openHelpModal()">❓ Help/Instructions</button>
+      </div>
+    </section>
+
+    <!-- Section 1.2: Dashboard -->
+    <section id="dashboard">
+      <h2>📊 Immunization Dashboard</h2>
+      <div class="tab-container">
+        <div class="tab-buttons">
+          <button class="tab-button active" onclick="openTab('allRecords')">All Records</button>
+          <button class="tab-button" onclick="openTab('defaulters')">Defaulters</button>
+          <button class="tab-button" onclick="openTab('dueSoon')">Due Soon (7 days)</button>
+          <button class="tab-button" onclick="openTab('upcoming')">Upcoming (30 days)</button>
+          <button class="tab-button" onclick="openTab('zeroDose')">Zero-Dose Children</button>
+        </div>
+        
+        <div id="allRecords" class="tab-content active">
+          <table id="allRecordsTable">
+            <thead>
+              <tr>
+                <th>Reg No.</th>
+                <th>Name</th>
+                <th>Completed Vaccines</th>
+                <th>Booked Vaccines</th>
+                <th>Next Visit Date</th>
+                <th>Status</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              <!-- Rows will be populated dynamically -->
+            </tbody>
+          </table>
+        </div>
+        
+        <div id="defaulters" class="tab-content">
+          <table id="defaultersTable">
+            <thead>
+              <tr>
+                <th>Reg No.</th>
+                <th>Name</th>
+                <th>Missed Vaccine</th>
+                <th>Missed Date</th>
+                <th>Days Overdue</th>
+                <th>Contact</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              <!-- Rows will be populated dynamically -->
+            </tbody>
+          </table>
+        </div>
+        
+        <div id="dueSoon" class="tab-content">
+          <table id="dueSoonTable">
+            <thead>
+              <tr>
+                <th>Reg No.</th>
+                <th>Name</th>
+                <th>Due Vaccine</th>
+                <th>Due Date</th>
+                <th>Days Remaining</th>
+                <th>Contact</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              <!-- Rows will be populated dynamically -->
+            </tbody>
+          </table>
+        </div>
+        
+        <div id="upcoming" class="tab-content">
+          <table id="upcomingTable">
+            <thead>
+              <tr>
+                <th>Reg No.</th>
+                <th>Name</th>
+                <th>Scheduled Vaccine</th>
+                <th>Scheduled Date</th>
+                <th>Days Remaining</th>
+                <th>Contact</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              <!-- Rows will be populated dynamically -->
+            </tbody>
+          </table>
+        </div>
+        
+        <div id="zeroDose" class="tab-content">
+          <table id="zeroDoseTable">
+            <thead>
+              <tr>
+                <th>Reg No.</th>
+                <th>Name</th>
+                <th>DOB</th>
+                <th>Age</th>
+                <th>Community</th>
+                <th>Mother's Name</th>
+                <th>Father's Name</th>
+                <th>Contact</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              <!-- Rows will be populated dynamically -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- Settings Section -->
+    <section id="settings">
+      <h2>⚙️ Settings</h2>
+      
+      <div class="settings-group">
+        <h3>System Preferences</h3>
+        <div class="settings-options">
+          <div class="form-group">
+            <label for="defaultHealthWorker" class="required">Default Health Worker:</label>
+            <input type="text" id="defaultHealthWorker" placeholder="Enter default health worker name" required>
+          </div>
+          <div class="form-group">
+            <label for="reminderDays">Reminder Days Before Appointment:</label>
+            <select id="reminderDays">
+              <option value="1">1 Day</option>
+              <option value="3" selected>3 Days</option>
+              <option value="7">7 Days</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label for="facilityName" class="required">Facility Name:</label>
+            <input type="text" id="facilityName" placeholder="Enter facility name" required>
+          </div>
+          <div class="form-group">
+            <label for="language">Language:</label>
+            <select id="language">
+              <option value="en" selected>English</option>
+              <option value="fr">French</option>
+              <option value="ak">Akan</option>
+            </select>
+          </div>
+        </div>
+      </div>
+
+      <div class="settings-group">
+        <h3>Data Management</h3>
+        <div class="action-buttons">
+          <button onclick="exportAllData()">💾 Export All Data</button>
+          <button onclick="importData()">📥 Import Data</button>
+          <button onclick="syncData()">🔄 Sync Data Now</button>
+          <button onclick="resetSettings()">🔄 Reset Settings</button>
+        </div>
+      </div>
+
+      <div class="settings-group">
+        <h3>About</h3>
+        <p><strong>Version:</strong> 4.5.0</p>
+        <p><strong>Last Updated:</strong> <span id="lastUpdated"></span></p>
+        <p><strong>Data Storage:</strong> <span id="dataStorage">Firebase + Local Storage</span></p>
+        <p><strong>User:</strong> <span id="userEmail">Not logged in</span></p>
+      </div>
+
+      <button onclick="saveSettings()" class="auth-button" style="width: 100%;">💾 Save Settings</button>
+      
+      <!-- Analytics Section -->
+      <div id="analyticsSection"></div>
+    </section>
+
+    <!-- All Modals Here -->
+    <!-- Immunization Modal -->
+    <div id="immunizationModal" class="modal">
+      <div class="modal-content">
+        <span class="close" onclick="closeModal()">&times;</span>
+        <h2>💉 Immunization Schedule</h2>
+        <div id="childImmunizationHeader" style="margin-bottom: 20px; padding: 16px; background: #f8f9fa; border-radius: 8px; border-left: 4px solid var(--ghs-green);"></div>
+        <table id="immunizationTable">
+          <thead>
+            <tr>
+              <th>Vaccine</th>
+              <th>Recommended Age</th>
+              <th>Date Given</th>
+              <th>Batch Number</th>
+              <th>Place Given</th>
+              <th>Health Worker</th>
+              <th>Remarks</th>
+              <th>Status</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            <!-- Rows will be populated dynamically -->
+          </tbody>
+        </table>
+        
+        <div class="fixed-actions">
+          <button onclick="saveImmunizationData()" style="padding: 12px 24px; background: var(--ghs-green); color: white; border: none; border-radius: 8px; font-weight: 600; cursor: pointer;">💾 Save Immunization Data</button>
+          <button onclick="proceedToNextStep()" style="padding: 12px 24px; background: var(--ghs-blue); color: white; border: none; border-radius: 8px; font-weight: 600; cursor: pointer;">➡️ Proceed to Next Step</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- View Vaccination Details Modal -->
+    <div id="viewVaccinationModal" class="modal">
+      <div class="modal-content">
+        <span class="close" onclick="closeViewVaccinationModal()">&times;</span>
+        <h2>👁️ Vaccination Details</h2>
+        <div id="childVaccinationHeader" style="margin-bottom: 20px; padding: 16px; background: #f8f9fa; border-radius: 8px; border-left: 4px solid var(--ghs-green);"></div>
+        
+        <div class="view-options">
+          <button id="viewOnlyBtn" class="active" onclick="toggleViewMode('view')">View Only</button>
+          <button id="administerBtn" onclick="toggleViewMode('administer')">View & Administer</button>
+        </div>
+        
+        <h3 style="margin: 24px 0 12px; color: var(--ghs-green);">Completed Vaccinations</h3>
+        <table id="completedVaccinationsTable">
+          <thead>
+            <tr>
+              <th>Vaccine</th>
+              <th>Date Given</th>
+              <th>Batch Number</th>
+              <th>Place Given</th>
+              <th>Health Worker</th>
+              <th>Remarks</th>
+            </tr>
+          </thead>
+          <tbody>
+            <!-- Rows will be populated dynamically -->
+          </tbody>
+        </table>
+        
+        <h3 style="margin: 24px 0 12px; color: var(--ghs-green);">Booked Vaccinations</h3>
+        <table id="bookedVaccinationsTable">
+          <thead>
+            <tr>
+              <th>Vaccine</th>
+              <th>Scheduled Date</th>
+              <th>Status</th>
+              <th id="actionsHeader">Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            <!-- Rows will be populated dynamically -->
+          </tbody>
+        </table>
+        
+        <button onclick="closeViewVaccinationModal()" style="margin-top: 24px; padding: 12px 24px; background: var(--ghs-gray); color: white; border: none; border-radius: 8px; font-weight: 600; cursor: pointer;">Close</button>
+      </div>
+    </div>
+
+    <!-- Booking Modal -->
+    <div id="bookingModal" class="modal">
+      <div class="modal-content">
+        <span class="close" onclick="closeBookingModal()">&times;</span>
+        <h2>📅 Book Next Visit</h2>
+        <div id="completionMessage" style="display: none; padding: 16px; background: var(--ghs-green-light); border-radius: 8px; margin-bottom: 20px;">
+          <p>✅ This child has completed the immunization schedule (5 years or older).</p>
+        </div>
+        <div class="booking-form" id="bookingForm">
+          <h3 style="color: var(--ghs-green); margin-bottom: 16px;">Select Vaccines for Next Visit:</h3>
+          <div id="vaccineSelection">
+            <!-- Vaccine checkboxes will be populated dynamically -->
+          </div>
+          <label for="nextVisitDate" class="required">Next Visit Date:</label>
+          <input type="date" id="nextVisitDate" required>
+          <label for="visitReminder">Send Reminder:</label>
+          <select id="visitReminder">
+            <option value="none">No Reminder</option>
+            <option value="1day">1 Day Before</option>
+            <option value="3days">3 Days Before</option>
+            <option value="1week">1 Week Before</option>
+          </select>
+          <button onclick="saveBooking()" style="padding: 14px; background: var(--ghs-green); color: white; border: none; border-radius: 8px; font-weight: 600; cursor: pointer; margin-top: 16px;">✅ Confirm Booking</button>
+        </div>
+        <div id="completionSection" style="display: none; text-align: center; padding: 40px;">
+          <h3 style="color: var(--ghs-green); margin-bottom: 16px;">🎉 Immunization Complete!</h3>
+          <p>This child has received all recommended vaccines for the first 5 years.</p>
+          <button onclick="markAsComplete()" style="padding: 14px 24px; background: var(--ghs-green); color: white; border: none; border-radius: 8px; font-weight: 600; cursor: pointer; margin-top: 16px;">✅ Mark as Complete</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Outreach Planning Modal -->
+    <div id="outreachModal" class="modal">
+      <div class="modal-content">
+        <span class="close" onclick="closeOutreachModal()">&times;</span>
+        <h2>📍 Outreach Planning</h2>
+        <div class="booking-form">
+          <label for="outreachCommunity" class="required">Target Community:</label>
+          <input type="text" id="outreachCommunity" required>
+          
+          <label for="outreachDate" class="required">Outreach Date:</label>
+          <input type="date" id="outreachDate" required>
+          
+          <label for="outreachTeam">Team Members:</label>
+          <textarea id="outreachTeam" placeholder="Enter team members names"></textarea>
+          
+          <label for="outreachObjectives">Objectives:</label>
+          <textarea id="outreachObjectives" placeholder="Enter outreach objectives"></textarea>
+          
+          <label for="outreachVaccines">Vaccines to Administer:</label>
+          <div id="outreachVaccines">
+            <!-- Vaccine checkboxes will be populated dynamically -->
+          </div>
+          
+          <button onclick="saveOutreachPlan()" style="padding: 14px; background: var(--ghs-green); color: white; border: none; border-radius: 8px; font-weight: 600; cursor: pointer; margin-top: 16px;">💾 Save Outreach Plan</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Follow-up Actions Modal -->
+    <div id="followUpModal" class="modal">
+      <div class="modal-content">
+        <span class="close" onclick="closeFollowUpModal()">&times;</span>
+        <h2>📝 Follow-up Actions</h2>
+        <div class="booking-form">
+          <label for="followUpChild" class="required">Select Child:</label>
+          <select id="followUpChild" required>
+            <!-- Options will be populated dynamically -->
+          </select>
+          
+          <label for="followUpType" class="required">Follow-up Type:</label>
+          <select id="followUpType" required>
+            <option value="phone">Phone Call</option>
+            <option value="home">Home Visit</option>
+            <option value="community">Community Leader</option>
+            <option value="sms">SMS Reminder</option>
+          </select>
+          
+          <label for="followUpDate" class="required">Follow-up Date:</label>
+          <input type="date" id="followUpDate" required>
+          
+          <label for="followUpNotes">Notes:</label>
+          <textarea id="followUpNotes" placeholder="Enter follow-up details"></textarea>
+          
+          <button onclick="saveFollowUp()" style="padding: 14px; background: var(--ghs-green); color: white; border: none; border-radius: 8px; font-weight: 600; cursor: pointer; margin-top: 16px;">💾 Save Follow-up</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Edit Child Modal -->
+    <div id="editChildModal" class="modal">
+      <div class="modal-content">
+        <span class="close" onclick="closeEditChildModal()">&times;</span>
+        <h2>✏️ Edit Child Details</h2>
+        <form id="editChildForm">
+          <label for="editChildName" class="required">Child's Name:</label>
+          <input type="text" id="editChildName" required>
+
+          <label for="editDob" class="required">Date of Birth:</label>
+          <input type="date" id="editDob" required>
+
+          <label for="editSex" class="required">Sex:</label>
+          <select id="editSex" required>
+            <option value="Male">Male</option>
+            <option value="Female">Female</option>
+          </select>
+
+          <label for="editAddress" class="required">Address/Community:</label>
+          <input type="text" id="editAddress" required>
+
+          <label for="editContact">Contact (Caregiver):</label>
+          <input type="text" id="editContact">
+
+          <label for="editMotherName" class="required">Mother's Name:</label>
+          <input type="text" id="editMotherName" required>
+
+          <label for="editFatherName" class="required">Father's Name:</label>
+          <input type="text" id="editFatherName" required>
+
+          <button type="button" onclick="saveEditedChild()" style="padding: 14px 24px; background: var(--ghs-green); color: white; border: none; border-radius: 8px; font-weight: 600; cursor: pointer; margin-top: 16px;">💾 Save Changes</button>
+        </form>
+      </div>
+    </div>
+
+    <!-- Today's Appointments Modal -->
+    <div id="todayAppointmentsModal" class="modal">
+      <div class="modal-content">
+        <span class="close" onclick="closeTodayAppointmentsModal()">&times;</span>
+        <h2>📅 Today's Appointments</h2>
+        <table id="todayAppointmentsTable">
+          <thead>
+            <tr>
+              <th>Reg No.</th>
+              <th>Name</th>
+              <th>Scheduled Vaccine</th>
+              <th>Contact</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            <!-- Rows will be populated dynamically -->
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Help Modal -->
+    <div id="helpModal" class="modal">
+      <div class="modal-content">
+        <span class="close" onclick="closeHelpModal()">&times;</span>
+        <h2>❓ Help/Instructions</h2>
+        <div style="max-height: 60vh; overflow-y: auto;">
+          <h3 style="color: var(--ghs-green); margin: 20px 0 10px;">Getting Started</h3>
+          <p>1. Register a child using the registration form.</p>
+          <p>2. Update immunization records by clicking "Update" next to a child's name.</p>
+          <p>3. Use the dashboard tabs to view defaulters, due soon, or all records.</p>
+          
+          <h3 style="color: var(--ghs-green); margin: 20px 0 10px;">2030 EPI Agenda - No Child Left Behind</h3>
+          <p>4. Monitor your progress toward 95% immunization coverage.</p>
+          <p>5. Identify and follow up with zero-dose children.</p>
+          <p>6. Use outreach planning to reach underserved communities.</p>
+          
+          <h3 style="color: var(--ghs-green); margin: 20px 0 10px;">Data Management</h3>
+          <p>7. Export data to CSV or print records for offline use.</p>
+          <p>8. Backup and restore data using the respective buttons.</p>
+          <p>9. Clear all data if needed (use with caution).</p>
+          
+          <h3 style="color: var(--ghs-green); margin: 20px 0 10px;">Vaccination Workflow</h3>
+          <p>10. When saving immunization records, you'll be prompted to book the next visit.</p>
+          <p>11. Select vaccines for the next visit and set the date in the booking form.</p>
+          <p>12. Use the "Today's Appointments" button to quickly view today's scheduled visits.</p>
+          
+          <h3 style="color: var(--ghs-green); margin: 20px 0 10px;">Settings</h3>
+          <p>13. Configure system preferences in the Settings section.</p>
+          <p>14. Set default values for health worker names and reminders.</p>
+          <p>15. Manage data backup and restore options.</p>
+          
+          <h3 style="color: var(--ghs-green); margin: 20px 0 10px;">Enhanced Features</h3>
+          <p>• Use advanced search to filter by community, status, and age group.</p>
+          <p>• View analytics and monthly reports in the Settings section.</p>
+          <p>• Create encrypted backups for additional security.</p>
+          <p>• Validate Ghanaian phone numbers and child ages during registration.</p>
+          
+          <h3 style="color: var(--ghs-green); margin: 20px 0 10px;">Firebase Integration</h3>
+          <p>• Create an account to sync your data across devices</p>
+          <p>• Login to access your facility data from any device</p>
+          <p>• Data is automatically synced when online</p>
+          <p>• Works completely offline with automatic sync when connection returns</p>
+          <p>• Forgot password feature available for account recovery</p>
+          
+          <h3 style="color: var(--ghs-green); margin: 20px 0 10px;">Navigation</h3>
+          <p>• Use the navigation menu to quickly access different sections of the app.</p>
+          <p>• On mobile devices, use the hamburger menu to access navigation.</p>
+          <p>• Dropdown menus provide access to related features and actions.</p>
+          
+          <h3 style="color: var(--ghs-green); margin: 20px 0 10px;">Tips</h3>
+          <p>• Use the search function to quickly find children in the register.</p>
+          <p>• The app works completely offline - no internet connection required.</p>
+          <p>• Data is automatically saved as you work.</p>
+          <p>• Use the quick action buttons at the top for easy navigation.</p>
+          <p>• Sync data regularly to ensure your information is backed up.</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Footer -->
+    <footer>
+      Developed By NASARE SURAJ | Immunization Tracker v4.5 | Ghana Health Service | 2030 EPI Agenda - No Child Left Behind
+    </footer>
+  </div>
+
+  <!-- Service Worker Registration -->
+  <script>
+    // PWA Service Worker Registration
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', function() {
+        // Register service worker
+        navigator.serviceWorker.register('/sw.js')
+          .then(function(registration) {
+            console.log('ServiceWorker registration successful with scope: ', registration.scope);
+            updateSWStatus('✅ Online');
+          })
+          .catch(function(error) {
+            console.log('ServiceWorker registration failed: ', error);
+            updateSWStatus('❌ Offline');
+          });
+
+        // Listen for claiming of service worker
+        navigator.serviceWorker.addEventListener('controllerchange', function() {
+          console.log('Service worker controller changed');
+        });
+      });
+    }
+
+    function updateSWStatus(message) {
+      const statusElement = document.getElementById('swStatus');
+      if (statusElement) {
+        statusElement.textContent = message;
+        statusElement.style.display = 'block';
+        
+        if (message.includes('Offline')) {
+          statusElement.classList.add('offline');
+        } else if (message.includes('Syncing')) {
+          statusElement.classList.add('syncing');
+        } else {
+          statusElement.classList.remove('offline', 'syncing');
+        }
+      }
+    }
+
+    // PWA Install Prompt
+    let deferredPrompt;
+    const installPrompt = document.getElementById('pwaInstallPrompt');
+    const installConfirm = document.getElementById('pwaInstallConfirm');
+    const installCancel = document.getElementById('pwaInstallCancel');
+
+    window.addEventListener('beforeinstallprompt', (e) => {
+      // Prevent the mini-infobar from appearing on mobile
+      e.preventDefault();
+      // Stash the event so it can be triggered later
+      deferredPrompt = e;
+      // Show the install prompt
+      installPrompt.classList.add('show');
+    });
+
+    installConfirm.addEventListener('click', async () => {
+      if (deferredPrompt) {
+        // Show the install prompt
+        deferredPrompt.prompt();
+        // Wait for the user to respond to the prompt
+        const { outcome } = await deferredPrompt.userChoice;
+        console.log(`User response to the install prompt: ${outcome}`);
+        // We no longer need the prompt
+        deferredPrompt = null;
+        // Hide the install prompt
+        installPrompt.classList.remove('show');
+      }
+    });
+
+    installCancel.addEventListener('click', () => {
+      installPrompt.classList.remove('show');
+      // Optionally, save user preference to not show again
+      localStorage.setItem('pwaInstallDismissed', 'true');
+    });
+
+    // Check if user has previously dismissed the prompt
+    if (localStorage.getItem('pwaInstallDismissed') === 'true') {
+      installPrompt.style.display = 'none';
+    }
+
+    // Listen for app installation
+    window.addEventListener('appinstalled', () => {
+      console.log('PWA was installed');
+      installPrompt.classList.remove('show');
+      deferredPrompt = null;
+    });
+  </script>
+
+  <!-- The rest of your existing JavaScript code remains exactly the same -->
+  <script>
+    // Password toggle functionality
+    function togglePasswordVisibility(passwordFieldId, toggleButton) {
+      const passwordField = document.getElementById(passwordFieldId);
+      if (passwordField.type === 'password') {
+        passwordField.type = 'text';
+        toggleButton.textContent = '🙈';
+      } else {
+        passwordField.type = 'password';
+        toggleButton.textContent = '👁️';
+      }
+    }
+
+    // Application Data Structure
+    let appData = {
+      children: [],
+      outreachPlans: [],
+      followUps: [],
+      settings: {
+        defaultHealthWorker: '',
+        reminderDays: 3,
+        facilityName: 'Local Health Facility',
+        language: 'en',
+        lastUpdated: new Date().toISOString()
+      },
+      userId: null,
+      lastSync: null
+    };
+
+    // Current user information
+    let currentUser = null;
+
+    // Vaccines schedule (based on Ghana Health Service recommendations)
+    const vaccineSchedule = [
+      { name: 'BCG', recommendedAge: 'At birth', dose: 'Single dose', minAgeDays: 0, maxAgeDays: 30 },
+      { name: 'OPV0', recommendedAge: 'At birth', dose: 'Single dose', minAgeDays: 0, maxAgeDays: 14 },
+      { name: 'Hepatitis B', recommendedAge: 'At birth', dose: 'Single dose', minAgeDays: 0, maxAgeDays: 30 },
+      { name: 'OPV1', recommendedAge: '6 weeks', dose: 'First dose', minAgeDays: 42, maxAgeDays: 70 },
+      { name: 'Penta1', recommendedAge: '6 weeks', dose: 'First dose', minAgeDays: 42, maxAgeDays: 70 },
+      { name: 'PCV1', recommendedAge: '6 weeks', dose: 'First dose', minAgeDays: 42, maxAgeDays: 70 },
+      { name: 'Rota1', recommendedAge: '6 weeks', dose: 'First dose', minAgeDays: 42, maxAgeDays: 84 },
+      { name: 'OPV2', recommendedAge: '10 weeks', dose: 'Second dose', minAgeDays: 70, maxAgeDays: 98 },
+      { name: 'Penta2', recommendedAge: '10 weeks', dose: 'Second dose', minAgeDays: 70, maxAgeDays: 98 },
+      { name: 'PCV2', recommendedAge: '10 weeks', dose: 'Second dose', minAgeDays: 70, maxAgeDays: 98 },
+      { name: 'Rota2', recommendedAge: '10 weeks', dose: 'Second dose', minAgeDays: 70, maxAgeDays: 112 },
+      { name: 'OPV3', recommendedAge: '14 weeks', dose: 'Third dose', minAgeDays: 98, maxAgeDays: 180 },
+      { name: 'Penta3', recommendedAge: '14 weeks', dose: 'Third dose', minAgeDays: 98, maxAgeDays: 180 },
+      { name: 'PCV3', recommendedAge: '14 weeks', dose: 'Third dose', minAgeDays: 98, maxAgeDays: 180 },
+      { name: 'IPV1', recommendedAge: '14 weeks', dose: 'First dose', minAgeDays: 98, maxAgeDays: 365 },
+      { name: 'Malaria1', recommendedAge: '6 months', dose: 'First dose', minAgeDays: 180, maxAgeDays: 210 },
+      { name: 'Vitamin A1', recommendedAge: '6 months', dose: 'First dose', minAgeDays: 180, maxAgeDays: 210 },
+      { name: 'Malaria2', recommendedAge: '7 months', dose: 'Second dose', minAgeDays: 210, maxAgeDays: 240 },
+      { name: 'IPV2', recommendedAge: '7 months', dose: 'Second dose', minAgeDays: 210, maxAgeDays: 270 },
+      { name: 'Malaria3', recommendedAge: '9 months', dose: 'Third dose', minAgeDays: 270, maxAgeDays: 300 },
+      { name: 'Measles1', recommendedAge: '9 months', dose: 'First dose', minAgeDays: 270, maxAgeDays: 365 },
+      { name: 'Yellow Fever', recommendedAge: '9 months', dose: 'Single dose', minAgeDays: 270, maxAgeDays: 365 },
+      { name: 'Vitamin A2', recommendedAge: '12 months', dose: 'Second dose', minAgeDays: 360, maxAgeDays: 390 },
+      { name: 'Malaria4', recommendedAge: '18 months', dose: 'Fourth dose', minAgeDays: 540, maxAgeDays: 570 },
+      { name: 'LLIN', recommendedAge: '18 months', dose: 'Single dose', minAgeDays: 540, maxAgeDays: 570 },
+      { name: 'Measles2', recommendedAge: '18 months', dose: 'Second dose', minAgeDays: 540, maxAgeDays: 730 },
+      { name: 'Meningitis A', recommendedAge: '18 months', dose: 'Single dose', minAgeDays: 540, maxAgeDays: 730 },
+      { name: 'Vitamin A3', recommendedAge: '18 months', dose: 'Third dose', minAgeDays: 540, maxAgeDays: 570 },
+      { name: 'Vitamin A4', recommendedAge: '24 months', dose: 'Fourth dose', minAgeDays: 720, maxAgeDays: 750 },
+      { name: 'Vitamin A5', recommendedAge: '30 months', dose: 'Fifth dose', minAgeDays: 900, maxAgeDays: 930 },
+      { name: 'Vitamin A6', recommendedAge: '36 months', dose: 'Sixth dose', minAgeDays: 1080, maxAgeDays: 1110 },
+      { name: 'Vitamin A7', recommendedAge: '42 months', dose: 'Seventh dose', minAgeDays: 1260, maxAgeDays: 1290 },
+      { name: 'Vitamin A8', recommendedAge: '48 months', dose: 'Eighth dose', minAgeDays: 1440, maxAgeDays: 1470 },
+      { name: 'Vitamin A9', recommendedAge: '54 months', dose: 'Ninth dose', minAgeDays: 1620, maxAgeDays: 1650 },
+      { name: 'Vitamin A10', recommendedAge: '60 months', dose: 'Tenth dose', minAgeDays: 1800, maxAgeDays: 1830 }
+    ];
+
+    // Initialize the application
+    document.addEventListener('DOMContentLoaded', function() {
+      initializeFirebaseAuth();
+      setupEventListeners();
+      checkOnlineStatus();
+      
+      // Set up event listeners for online/offline status
+      window.addEventListener('online', checkOnlineStatus);
+      window.addEventListener('offline', checkOnlineStatus);
+    });
+
+    // Firebase Authentication Functions
+    function initializeFirebaseAuth() {
+      if (!window.firebase) {
+        console.error('Firebase not loaded');
+        return;
+      }
+
+      const { onAuthStateChanged, auth } = window.firebase;
+      
+      onAuthStateChanged(auth, (user) => {
+        if (user) {
+          // User is signed in
+          currentUser = user;
+          appData.userId = user.uid;
+          document.getElementById('currentUser').textContent = user.email;
+          document.getElementById('userEmail').textContent = user.email;
+          
+          // Load user data
+          loadUserData();
+          
+          // Show app screen, hide auth screen
+          document.getElementById('authScreen').style.display = 'none';
+          document.getElementById('appScreen').style.display = 'block';
+          
+          showNotification('Welcome back!', 'success');
+        } else {
+          // User is signed out
+          currentUser = null;
+          appData.userId = null;
+          
+          // Show auth screen, hide app screen
+          document.getElementById('authScreen').style.display = 'flex';
+          document.getElementById('appScreen').style.display = 'none';
+        }
+      });
+    }
+
+    // Authentication UI Functions
+    function toggleAuthForm() {
+      const loginForm = document.getElementById('loginForm');
+      const signupForm = document.getElementById('signupForm');
+      const switchText = document.getElementById('switchText');
+      const switchLink = document.getElementById('switchLink');
+      
+      if (loginForm.style.display !== 'none') {
+        // Switch to signup
+        loginForm.style.display = 'none';
+        signupForm.style.display = 'flex';
+        switchText.textContent = 'Already have an account? ';
+        switchLink.textContent = 'Login';
+      } else {
+        // Switch to login
+        signupForm.style.display = 'none';
+        loginForm.style.display = 'flex';
+        switchText.textContent = 'Don\'t have an account? ';
+        switchLink.textContent = 'Sign up';
+      }
+    }
+
+    function showForgotPassword() {
+      document.getElementById('loginForm').style.display = 'none';
+      document.getElementById('signupForm').style.display = 'none';
+      document.getElementById('forgotPasswordForm').style.display = 'flex';
+      document.querySelector('.auth-switch').style.display = 'none';
+    }
+
+    function showLogin() {
+      document.getElementById('forgotPasswordForm').style.display = 'none';
+      document.getElementById('loginForm').style.display = 'flex';
+      document.querySelector('.auth-switch').style.display = 'block';
+      toggleAuthForm(); // Reset to login form
+    }
+
+    // Firebase Authentication Handlers
+    document.getElementById('loginForm').addEventListener('submit', async function(e) {
+      e.preventDefault();
+      
+      const email = document.getElementById('loginEmail').value;
+      const password = document.getElementById('loginPassword').value;
+      
+      try {
+        const { signInWithEmailAndPassword, auth } = window.firebase;
+        await signInWithEmailAndPassword(auth, email, password);
+        // Auth state change will handle the rest
+      } catch (error) {
+        showNotification('Login failed: ' + error.message, 'error');
+      }
+    });
+
+    document.getElementById('signupForm').addEventListener('submit', async function(e) {
+      e.preventDefault();
+      
+      const facilityName = document.getElementById('signupFacilityName').value;
+      const email = document.getElementById('signupEmail').value;
+      const password = document.getElementById('signupPassword').value;
+      
+      try {
+        const { createUserWithEmailAndPassword, auth } = window.firebase;
+        const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+        const user = userCredential.user;
+        
+        // Initialize user data with facility name
+        appData.settings.facilityName = facilityName;
+        appData.userId = user.uid;
+        
+        // Save initial data
+        await saveDataToFirestore();
+        await saveDataToLocalStorage();
+        
+        showNotification('Account created successfully!', 'success');
+      } catch (error) {
+        showNotification('Signup failed: ' + error.message, 'error');
+      }
+    });
+
+    document.getElementById('forgotPasswordForm').addEventListener('submit', async function(e) {
+      e.preventDefault();
+      
+      const email = document.getElementById('resetEmail').value;
+      
+      try {
+        const { sendPasswordResetEmail, auth } = window.firebase;
+        await sendPasswordResetEmail(auth, email);
+        showNotification('Password reset email sent! Check your inbox.', 'success');
+        showLogin();
+      } catch (error) {
+        showNotification('Error: ' + error.message, 'error');
+      }
+    });
+
+    async function logout() {
+      try {
+        const { signOut, auth } = window.firebase;
+        await signOut(auth);
+        showNotification('Logged out successfully', 'success');
+      } catch (error) {
+        showNotification('Logout error: ' + error.message, 'error');
+      }
+    }
+
+    // Data Synchronization Functions
+    async function syncData() {
+      if (!currentUser || !navigator.onLine) {
+        showNotification('Cannot sync: No internet connection or user not logged in', 'error');
+        return;
+      }
+
+      showSyncStatus('🔄 Syncing data with cloud...');
+      
+      try {
+        // Load data from Firestore
+        await loadDataFromFirestore();
+        
+        // Also save current data to Firestore to ensure consistency
+        await saveDataToFirestore();
+        
+        showSyncStatus('✅ Data synced successfully!');
+        setTimeout(() => {
+          document.getElementById('syncStatus').style.display = 'none';
+        }, 3000);
+        
+        showNotification('Data synchronized successfully', 'success');
+      } catch (error) {
+        showSyncStatus('❌ Sync failed: ' + error.message);
+        showNotification('Sync failed: ' + error.message, 'error');
+      }
+    }
+
+    function showSyncStatus(message) {
+      const syncStatus = document.getElementById('syncStatus');
+      syncStatus.textContent = message;
+      syncStatus.style.display = 'block';
+    }
+
+    // Enhanced Data Storage Functions
+    async function saveData() {
+      // Always save to localStorage for offline access
+      saveDataToLocalStorage();
+      
+      // Save to Firestore if online and user is authenticated
+      if (navigator.onLine && currentUser) {
+        try {
+          await saveDataToFirestore();
+        } catch (error) {
+          console.error('Failed to save to Firestore:', error);
+          // Data is still saved locally, will sync later
+        }
+      }
+    }
+
+    function saveDataToLocalStorage() {
+      try {
+        const key = currentUser ? `immunizationData_${currentUser.uid}` : 'immunizationData_local';
+        localStorage.setItem(key, JSON.stringify(appData));
+      } catch (error) {
+        console.error('Error saving to localStorage:', error);
+      }
+    }
+
+    async function saveDataToFirestore() {
+      if (!currentUser) return;
+      
+      try {
+        const { doc, setDoc, db } = window.firebase;
+        const userDocRef = doc(db, 'users', currentUser.uid);
+        
+        // Update last sync timestamp
+        appData.lastSync = new Date().toISOString();
+        
+        await setDoc(userDocRef, {
+          data: appData,
+          lastUpdated: new Date().toISOString(),
+          facilityName: appData.settings.facilityName
+        });
+      } catch (error) {
+        console.error('Error saving to Firestore:', error);
+        throw error;
+      }
+    }
+
+    async function loadUserData() {
+      // Try to load from Firestore first if online
+      if (navigator.onLine) {
+        try {
+          await loadDataFromFirestore();
+          return;
+        } catch (error) {
+          console.error('Failed to load from Firestore:', error);
+        }
+      }
+      
+      // Fall back to localStorage
+      loadDataFromLocalStorage();
+    }
+
+    function loadDataFromLocalStorage() {
+      try {
+        const key = currentUser ? `immunizationData_${currentUser.uid}` : 'immunizationData_local';
+        const savedData = localStorage.getItem(key);
+        
+        if (savedData) {
+          const parsedData = JSON.parse(savedData);
+          
+          // Merge with existing appData, preserving current structure
+          if (parsedData.children) appData.children = parsedData.children;
+          if (parsedData.outreachPlans) appData.outreachPlans = parsedData.outreachPlans;
+          if (parsedData.followUps) appData.followUps = parsedData.followUps;
+          if (parsedData.settings) appData.settings = { ...appData.settings, ...parsedData.settings };
+          
+          updateAppUI();
+          initializeSettings();
+          updateCommunityFilter();
+        }
+      } catch (error) {
+        console.error('Error loading from localStorage:', error);
+      }
+    }
+
+    async function loadDataFromFirestore() {
+      if (!currentUser) return;
+      
+      try {
+        const { doc, getDoc, db } = window.firebase;
+        const userDocRef = doc(db, 'users', currentUser.uid);
+        const docSnap = await getDoc(userDocRef);
+        
+        if (docSnap.exists()) {
+          const firestoreData = docSnap.data();
+          
+          if (firestoreData.data) {
+            // Replace local data with Firestore data
+            appData = firestoreData.data;
+            updateAppUI();
+            initializeSettings();
+            updateCommunityFilter();
+            
+            // Also update localStorage
+            saveDataToLocalStorage();
+          }
+        }
+      } catch (error) {
+        console.error('Error loading from Firestore:', error);
+        throw error;
+      }
+    }
+
+    // Navigation Functions
+    function initializeNavigation() {
+      // Set home as active section by default
+      showSection('home');
+    }
+
+    function showSection(sectionId) {
+      // Hide all sections
+      const sections = document.querySelectorAll('section');
+      sections.forEach(section => {
+        section.style.display = 'none';
+        section.classList.remove('active-section');
+      });
+      
+      // Show the selected section
+      const targetSection = document.getElementById(sectionId);
+      if (targetSection) {
+        targetSection.style.display = 'block';
+        targetSection.classList.add('active-section');
+        
+        // Update active nav links
+        updateActiveNavLink(sectionId);
+        
+        // Scroll to top
+        window.scrollTo(0, 0);
+      }
+    }
+
+    function updateActiveNavLink(sectionId) {
+      // Update desktop nav
+      const navLinks = document.querySelectorAll('.nav-link');
+      navLinks.forEach(link => {
+        link.classList.remove('active');
+      });
+      
+      const dropdownItems = document.querySelectorAll('.dropdown-item');
+      dropdownItems.forEach(item => {
+        item.classList.remove('active');
+      });
+      
+      // Update mobile nav
+      const mobileNavLinks = document.querySelectorAll('.mobile-nav-link');
+      mobileNavLinks.forEach(link => {
+        link.classList.remove('active');
+      });
+      
+      const mobileDropdownItems = document.querySelectorAll('.mobile-dropdown-item');
+      mobileDropdownItems.forEach(item => {
+        item.classList.remove('active');
+      });
+      
+      // Set active based on section
+      switch(sectionId) {
+        case 'home':
+          document.querySelector('.nav-link[onclick*="home"]').classList.add('active');
+          document.querySelector('.mobile-nav-link[onclick*="home"]').classList.add('active');
+          break;
+        case 'registration':
+          document.querySelector('.nav-link[onclick*="registration"]').classList.add('active');
+          document.querySelector('.mobile-nav-link[onclick*="registration"]').classList.add('active');
+          break;
+        case 'childHealthRegister':
+          document.querySelector('.dropdown-item[onclick*="childHealthRegister"]').classList.add('active');
+          document.querySelector('.mobile-dropdown-item[onclick*="childHealthRegister"]').classList.add('active');
+          break;
+        case 'dashboard':
+          document.querySelector('.dropdown-item[onclick*="dashboard"]').classList.add('active');
+          document.querySelector('.mobile-dropdown-item[onclick*="dashboard"]').classList.add('active');
+          break;
+        case 'settings':
+          document.querySelector('.nav-link[onclick*="settings"]').classList.add('active');
+          document.querySelector('.mobile-nav-link[onclick*="settings"]').classList.add('active');
+          break;
+      }
+    }
+
+    function toggleDropdown(dropdownId) {
+      const dropdown = document.getElementById(dropdownId);
+      dropdown.classList.toggle('show');
+      
+      // Close other dropdowns
+      const allDropdowns = document.querySelectorAll('.dropdown-menu');
+      allDropdowns.forEach(dropdown => {
+        if (dropdown.id !== dropdownId) {
+          dropdown.classList.remove('show');
+        }
+      });
+    }
+
+    function toggleMobileMenu() {
+      const mobileMenu = document.getElementById('mobileMenu');
+      mobileMenu.classList.toggle('show');
+    }
+
+    function toggleMobileDropdown(dropdownId) {
+      const dropdown = document.getElementById(dropdownId);
+      dropdown.classList.toggle('show');
+    }
+
+    // Close dropdowns when clicking outside
+    document.addEventListener('click', function(event) {
+      if (!event.target.matches('.nav-link') && !event.target.closest('.dropdown')) {
+        const dropdowns = document.querySelectorAll('.dropdown-menu');
+        dropdowns.forEach(dropdown => {
+          dropdown.classList.remove('show');
+        });
+      }
+    });
+
+    // Initialize settings UI
+    function initializeSettings() {
+      if (appData.settings) {
+        document.getElementById('defaultHealthWorker').value = appData.settings.defaultHealthWorker || '';
+        document.getElementById('reminderDays').value = appData.settings.reminderDays || 3;
+        document.getElementById('facilityName').value = appData.settings.facilityName || 'Local Health Facility';
+        document.getElementById('language').value = appData.settings.language || 'en';
+        
+        // Update facility name in header
+        document.getElementById('currentFacility').textContent = appData.settings.facilityName || 'Local Health Facility';
+        
+        document.getElementById('lastUpdated').textContent = new Date(appData.settings.lastUpdated).toLocaleDateString();
+      }
+    }
+
+    // Update community filter dropdown
+    function updateCommunityFilter() {
+      const communities = [...new Set(appData.children.map(child => child.address))];
+      const communityFilter = document.getElementById('communityFilter');
+      
+      // Clear existing options except the first one
+      while (communityFilter.children.length > 1) {
+        communityFilter.removeChild(communityFilter.lastChild);
+      }
+      
+      // Add community options
+      communities.forEach(community => {
+        const option = document.createElement('option');
+        option.value = community;
+        option.textContent = community;
+        communityFilter.appendChild(option);
+      });
+    }
+
+    // Save settings
+    function saveSettings() {
+      appData.settings = {
+        defaultHealthWorker: document.getElementById('defaultHealthWorker').value,
+        reminderDays: parseInt(document.getElementById('reminderDays').value),
+        facilityName: document.getElementById('facilityName').value,
+        language: document.getElementById('language').value,
+        lastUpdated: new Date().toISOString()
+      };
+      
+      // Update facility name in header
+      document.getElementById('currentFacility').textContent = appData.settings.facilityName;
+      
+      saveData();
+      showNotification('Settings saved successfully', 'success');
+    }
+
+    // Reset settings to defaults
+    function resetSettings() {
+      if (confirm('Are you sure you want to reset all settings to default values?')) {
+        appData.settings = {
+          defaultHealthWorker: '',
+          reminderDays: 3,
+          facilityName: 'Local Health Facility',
+          language: 'en',
+          lastUpdated: new Date().toISOString()
+        };
+        
+        saveData();
+        initializeSettings();
+        showNotification('Settings reset to defaults', 'success');
+      }
+    }
+
+    // Export all data
+    function exportAllData() {
+      const dataStr = JSON.stringify(appData, null, 2);
+      const dataBlob = new Blob([dataStr], {type: 'application/json'});
+      
+      const url = URL.createObjectURL(dataBlob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `immunization_complete_backup_${new Date().toISOString().split('T')[0]}.json`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+      
+      showNotification('All data exported successfully', 'success');
+    }
+
+    // Import data
+    function importData() {
+      const input = document.createElement('input');
+      input.type = 'file';
+      input.accept = '.json';
+      input.onchange = function(event) {
+        const file = event.target.files[0];
+        if (!file) return;
+        
+        const reader = new FileReader();
+        reader.onload = function(e) {
+          try {
+            const importedData = JSON.parse(e.target.result);
+            
+            if (confirm('This will replace all current data. Are you sure?')) {
+              appData = importedData;
+              saveData();
+              updateAppUI();
+              initializeSettings();
+              updateCommunityFilter();
+              showNotification('Data imported successfully', 'success');
+            }
+          } catch (error) {
+            showNotification('Error importing data: Invalid file format', 'error');
+          }
+        };
+        reader.readAsText(file);
+      };
+      input.click();
+    }
+
+    // Set up event listeners for forms and inputs
+    function setupEventListeners() {
+      // Registration form with validation
+      document.getElementById('registrationForm').addEventListener('submit', function(e) {
+        e.preventDefault();
+        
+        const phone = document.getElementById('contact').value;
+        const dob = document.getElementById('dob').value;
+        
+        if (phone && !validateGhanaPhoneNumber(phone)) {
+          showNotification('Please enter a valid Ghanaian phone number (e.g., 0241234567)', 'error');
+          return;
+        }
+        
+        if (!validateChildAge(dob)) {
+          showNotification('Child age must be between 0-5 years for immunization tracking', 'error');
+          return;
+        }
+        
+        registerChild(e);
+      });
+      
+      // Restore file input
+      document.getElementById('restoreFile').addEventListener('change', handleRestoreData);
+    }
+
+    // Enhanced data validation
+    function validateGhanaPhoneNumber(phone) {
+      const ghanaPhoneRegex = /^(?:\+233|0)[234][0-9]{8}$/;
+      return ghanaPhoneRegex.test(phone.replace(/\s/g, ''));
+    }
+
+    function validateChildAge(dob) {
+      const birthDate = new Date(dob);
+      const today = new Date();
+      const ageInYears = today.getFullYear() - birthDate.getFullYear();
+      
+      // Children should be 0-5 years for immunization
+      return ageInYears >= 0 && ageInYears <= 5;
+    }
+
+    // Check online status and update UI
+    function checkOnlineStatus() {
+      const offlineIndicator = document.getElementById('offlineIndicator');
+      if (!navigator.onLine) {
+        offlineIndicator.style.display = 'block';
+        updateSWStatus('❌ Offline');
+      } else {
+        offlineIndicator.style.display = 'none';
+        updateSWStatus('✅ Online');
+        // Auto-sync when coming online
+        if (currentUser) {
+          setTimeout(syncData, 2000);
+        }
+      }
+    }
+
+    // Toggle section visibility
+    function toggleSection(sectionId) {
+      const section = document.getElementById(sectionId);
+      const toggleButton = section.querySelector('.section-toggle');
+      const content = section.querySelectorAll('form, table, .search-container, .action-buttons');
+      
+      content.forEach(element => {
+        if (element.style.display === 'none') {
+          element.style.display = '';
+          toggleButton.textContent = '−';
+        } else {
+          element.style.display = 'none';
+          toggleButton.textContent = '+';
+        }
+      });
+    }
+
+    // Child registration and management
+    function registerChild(e) {
+      e.preventDefault();
+      
+      const childName = document.getElementById('childName').value;
+      const dob = document.getElementById('dob').value;
+      const sex = document.getElementById('sex').value;
+      const address = document.getElementById('address').value;
+      const contact = document.getElementById('contact').value;
+      const motherName = document.getElementById('motherName').value;
+      const fatherName = document.getElementById('fatherName').value;
+      
+      // Generate registration number
+      const regNo = generateRegistrationNumber();
+      
+      // Create child object
+      const child = {
+        id: generateId(),
+        regNo: regNo,
+        name: childName,
+        dob: dob,
+        sex: sex,
+        address: address,
+        contact: contact,
+        motherName: motherName,
+        fatherName: fatherName,
+        immunizations: [],
+        nextVisit: null,
+        bookedVaccines: [],
+        followUps: [],
+        completed: false,
+        createdAt: new Date().toISOString()
+      };
+      
+      // Add to children array
+      appData.children.push(child);
+      
+      saveData();
+      updateCommunityFilter();
+      
+      showNotification(`Child ${childName} registered successfully with ID: ${regNo}`, 'success');
+      
+      // Reset form
+      document.getElementById('registrationForm').reset();
+      
+      // Update UI
+      updateAppUI();
+    }
+
+    function updateChildHealthRegister() {
+      const children = appData.children;
+      const tableBody = document.getElementById('childTable').querySelector('tbody');
+      tableBody.innerHTML = '';
+      
+      children.forEach(child => {
+        const row = document.createElement('tr');
+        
+        // Determine child's immunization status
+        let statusBadge = '';
+        if (child.completed) {
+          statusBadge = '<span class="badge success">Completed</span>';
+        } else if (child.immunizations.length === 0) {
+          statusBadge = '<span class="badge danger">Zero-Dose</span>';
+        } else if (child.immunizations.length === vaccineSchedule.length) {
+          statusBadge = '<span class="badge success">Fully Immunized</span>';
+        } else {
+          statusBadge = '<span class="badge warning">Partially Immunized</span>';
+        }
+        
+        row.innerHTML = `
+          <td>${child.regNo}</td>
+          <td>${child.name}</td>
+          <td>${formatDate(child.dob)}</td>
+          <td>${calculateAge(child.dob)}</td>
+          <td>${child.sex}</td>
+          <td>${child.address}</td>
+          <td>${child.motherName || 'N/A'}</td>
+          <td>${child.fatherName || 'N/A'}</td>
+          <td>${child.contact || 'N/A'}</td>
+          <td>${statusBadge}</td>
+          <td>
+            <button onclick="openImmunizationModal('${child.id}')">💉 Update</button>
+            <div class="dropdown" style="display: inline-block;">
+              <button class="dropbtn">👁️ View</button>
+              <div class="dropdown-content">
+                <a href="#" onclick="openViewVaccinationModal('${child.id}', 'view')">View Only</a>
+                <a href="#" onclick="openViewVaccinationModal('${child.id}', 'administer')">View & Administer</a>
+              </div>
+            </div>
+            <button onclick="openEditChildModal('${child.id}')">✏️ Edit</button>
+            <button onclick="deleteChild('${child.id}')" class="danger">🗑️ Delete</button>
+          </td>
+        `;
+        
+        tableBody.appendChild(row);
+      });
+    }
+
+    // Advanced search functionality
+    function filterChildren() {
+      const filteredChildren = advancedSearch();
+      const tableBody = document.getElementById('childTable').querySelector('tbody');
+      tableBody.innerHTML = '';
+      
+      filteredChildren.forEach(child => {
+        const row = document.createElement('tr');
+        
+        // Determine child's immunization status
+        let statusBadge = '';
+        if (child.completed) {
+          statusBadge = '<span class="badge success">Completed</span>';
+        } else if (child.immunizations.length === 0) {
+          statusBadge = '<span class="badge danger">Zero-Dose</span>';
+        } else if (child.immunizations.length === vaccineSchedule.length) {
+          statusBadge = '<span class="badge success">Fully Immunized</span>';
+        } else {
+          statusBadge = '<span class="badge warning">Partially Immunized</span>';
+        }
+        
+        row.innerHTML = `
+          <td>${child.regNo}</td>
+          <td>${child.name}</td>
+          <td>${formatDate(child.dob)}</td>
+          <td>${calculateAge(child.dob)}</td>
+          <td>${child.sex}</td>
+          <td>${child.address}</td>
+          <td>${child.motherName || 'N/A'}</td>
+          <td>${child.fatherName || 'N/A'}</td>
+          <td>${child.contact || 'N/A'}</td>
+          <td>${statusBadge}</td>
+          <td>
+            <button onclick="openImmunizationModal('${child.id}')">💉 Update</button>
+            <div class="dropdown" style="display: inline-block;">
+              <button class="dropbtn">👁️ View</button>
+              <div class="dropdown-content">
+                <a href="#" onclick="openViewVaccinationModal('${child.id}', 'view')">View Only</a>
+                <a href="#" onclick="openViewVaccinationModal('${child.id}', 'administer')">View & Administer</a>
+              </div>
+            </div>
+            <button onclick="openEditChildModal('${child.id}')">✏️ Edit</button>
+            <button onclick="deleteChild('${child.id}')" class="danger">🗑️ Delete</button>
+          </td>
+        `;
+        
+        tableBody.appendChild(row);
+      });
+    }
+
+    function advancedSearch() {
+      const searchTerm = document.getElementById('search').value.toLowerCase();
+      const communityFilter = document.getElementById('communityFilter').value;
+      const statusFilter = document.getElementById('statusFilter').value;
+      const ageFilter = document.getElementById('ageFilter').value;
+      
+      const filteredChildren = appData.children.filter(child => {
+        // Text search
+        const matchesSearch = !searchTerm || 
+          child.name.toLowerCase().includes(searchTerm) ||
+          child.regNo.toLowerCase().includes(searchTerm) ||
+          child.address.toLowerCase().includes(searchTerm);
+        
+        // Community filter
+        const matchesCommunity = !communityFilter || child.address === communityFilter;
+        
+        // Status filter
+        let matchesStatus = true;
+        if (statusFilter === 'zero-dose') {
+          matchesStatus = child.immunizations.length === 0;
+        } else if (statusFilter === 'partially') {
+          matchesStatus = child.immunizations.length > 0 && child.immunizations.length < vaccineSchedule.length;
+        } else if (statusFilter === 'fully') {
+          matchesStatus = child.immunizations.length === vaccineSchedule.length || child.completed;
+        }
+        
+        // Age filter
+        let matchesAge = true;
+        if (ageFilter) {
+          const ageInMonths = calculateAgeInMonths(child.dob);
+          if (ageFilter === '0-6') matchesAge = ageInMonths <= 6;
+          else if (ageFilter === '7-12') matchesAge = ageInMonths > 6 && ageInMonths <= 12;
+          else if (ageFilter === '13-24') matchesAge = ageInMonths > 12 && ageInMonths <= 24;
+          else if (ageFilter === '25+') matchesAge = ageInMonths > 24;
+        }
+        
+        return matchesSearch && matchesCommunity && matchesStatus && matchesAge;
+      });
+      
+      return filteredChildren;
+    }
+
+    function deleteChild(childId) {
+      if (confirm('Are you sure you want to delete this child record? This action cannot be undone.')) {
+        const childIndex = appData.children.findIndex(child => child.id === childId);
+        
+        if (childIndex !== -1) {
+          appData.children.splice(childIndex, 1);
+          saveData();
+          updateCommunityFilter();
+          updateAppUI();
+          showNotification('Child record deleted successfully', 'success');
+        }
+      }
+    }
+
+    // Immunization functions
+    function openImmunizationModal(childId) {
+      const child = appData.children.find(c => c.id === childId);
+      if (!child) return;
+      
+      document.getElementById('immunizationModal').style.display = 'block';
+      
+      // Store current child ID for later use
+      document.getElementById('immunizationModal').dataset.childId = childId;
+      
+      // Update child header
+      document.getElementById('childImmunizationHeader').innerHTML = `
+        <strong>Child:</strong> ${child.name} (${child.regNo}) | 
+        <strong>DOB:</strong> ${formatDate(child.dob)} | 
+        <strong>Age:</strong> ${calculateAge(child.dob)}
+      `;
+      
+      const tableBody = document.getElementById('immunizationTable').querySelector('tbody');
+      tableBody.innerHTML = '';
+      
+      vaccineSchedule.forEach(vaccine => {
+        const row = document.createElement('tr');
+        
+        // Check if vaccine has been administered
+        const immunization = child.immunizations.find(imm => imm.name === vaccine.name);
+        
+        // Calculate if vaccine is due, overdue, or on time
+        const childAgeDays = calculateAgeInDays(child.dob);
+        let status = '';
+        if (immunization) {
+          status = '<span class="badge success">Given</span>';
+        } else if (childAgeDays >= vaccine.minAgeDays && childAgeDays <= vaccine.maxAgeDays) {
+          status = '<span class="badge warning">Due</span>';
+        } else if (childAgeDays > vaccine.maxAgeDays) {
+          status = '<span class="badge danger">Overdue</span>';
+        } else {
+          status = '<span class="badge">Not Due</span>';
+        }
+        
+        // Special validation for Malaria1 - only between 6-11 months
+        if (vaccine.name === 'Malaria1' && childAgeDays > 335) { // 11 months = ~335 days
+          status = '<span class="badge danger">Too Old</span>';
+        }
+        
+        // Check if child is 5 years or older
+        const isOver5Years = childAgeDays >= 1825; // 5 years = 1825 days
+        
+        row.innerHTML = `
+          <td>${vaccine.name}</td>
+          <td>${vaccine.recommendedAge}</td>
+          <td><input type="date" value="${immunization ? immunization.dateGiven : ''}" ${immunization ? 'disabled' : ''} class="${!immunization && !isOver5Years ? 'required-field' : ''}" ${!immunization && !isOver5Years ? 'required' : ''}></td>
+          <td><input type="text" value="${immunization ? immunization.batchNumber : ''}" placeholder="Batch number" ${immunization ? 'disabled' : ''}></td>
+          <td><input type="text" value="${immunization ? immunization.placeGiven : ''}" placeholder="Place given" ${immunization ? 'disabled' : ''} class="${!immunization && !isOver5Years ? 'required-field' : ''}" ${!immunization && !isOver5Years ? 'required' : ''}></td>
+          <td><input type="text" value="${immunization ? immunization.healthWorker : appData.settings.defaultHealthWorker}" placeholder="Health worker name" ${immunization ? 'disabled' : ''} class="${!immunization && !isOver5Years ? 'required-field' : ''}" ${!immunization && !isOver5Years ? 'required' : ''}></td>
+          <td><input type="text" value="${immunization ? immunization.remarks : ''}" placeholder="Remarks details" ${immunization ? 'disabled' : ''}></td>
+          <td>${status}</td>
+          <td>
+            ${immunization ? `<button onclick="editVaccine('${child.id}', '${vaccine.name}')">✏️ Edit</button>` : ''}
+          </td>
+        `;
+        
+        tableBody.appendChild(row);
+      });
+    }
+
+    // Edit vaccine record
+    function editVaccine(childId, vaccineName) {
+      const child = appData.children.find(c => c.id === childId);
+      if (!child) return;
+      
+      const immunization = child.immunizations.find(imm => imm.name === vaccineName);
+      if (!immunization) return;
+      
+      // Create edit form
+      const newDateGiven = prompt('Enter new date given:', immunization.dateGiven);
+      if (!newDateGiven) return;
+      
+      const newBatchNumber = prompt('Enter new batch number:', immunization.batchNumber || '');
+      const newPlaceGiven = prompt('Enter new place given:', immunization.placeGiven || '');
+      const newHealthWorker = prompt('Enter new health worker name:', immunization.healthWorker || '');
+      const newRemarks = prompt('Enter new Remarks details:', immunization.remarks || '');
+      
+      // Update immunization record
+      immunization.dateGiven = newDateGiven;
+      immunization.batchNumber = newBatchNumber;
+      immunization.placeGiven = newPlaceGiven;
+      immunization.healthWorker = newHealthWorker;
+      immunization.remarks = newRemarks;
+      
+      saveData();
+      showNotification(`${vaccineName} record updated successfully`, 'success');
+      
+      // Refresh the modal
+      closeModal();
+      openImmunizationModal(childId);
+    }
+
+    function closeModal() {
+      document.getElementById('immunizationModal').style.display = 'none';
+    }
+
+    // View Vaccination Details Modal
+    function openViewVaccinationModal(childId, mode) {
+      const child = appData.children.find(c => c.id === childId);
+      if (!child) return;
+      
+      document.getElementById('viewVaccinationModal').style.display = 'block';
+      document.getElementById('viewVaccinationModal').dataset.childId = childId;
+      document.getElementById('viewVaccinationModal').dataset.mode = mode;
+      
+      // Update child header
+      document.getElementById('childVaccinationHeader').innerHTML = `
+        <strong>Child:</strong> ${child.name} (${child.regNo}) | 
+        <strong>DOB:</strong> ${formatDate(child.dob)} | 
+        <strong>Age:</strong> ${calculateAge(child.dob)} |
+        <strong>Mother:</strong> ${child.motherName || 'N/A'} |
+        <strong>Father:</strong> ${child.fatherName || 'N/A'}
+      `;
+      
+      // Set active view mode button
+      document.getElementById('viewOnlyBtn').classList.remove('active');
+      document.getElementById('administerBtn').classList.remove('active');
+      document.getElementById(mode === 'view' ? 'viewOnlyBtn' : 'administerBtn').classList.add('active');
+      
+      // Show/hide actions column based on mode
+      const actionsHeader = document.getElementById('actionsHeader');
+      actionsHeader.style.display = mode === 'administer' ? 'table-cell' : 'none';
+      
+      // Populate completed vaccinations table
+      const completedTableBody = document.getElementById('completedVaccinationsTable').querySelector('tbody');
+      completedTableBody.innerHTML = '';
+      
+      child.immunizations.forEach(immunization => {
+        const row = document.createElement('tr');
+        row.innerHTML = `
+          <td>${immunization.name}</td>
+          <td>${formatDate(immunization.dateGiven)}</td>
+          <td>${immunization.batchNumber || 'N/A'}</td>
+          <td>${immunization.placeGiven || 'N/A'}</td>
+          <td>${immunization.healthWorker || 'N/A'}</td>
+          <td>${immunization.remarks || 'None'}</td>
+        `;
+        completedTableBody.appendChild(row);
+      });
+      
+      // Populate booked vaccinations in a table
+      const bookedTableBody = document.getElementById('bookedVaccinationsTable').querySelector('tbody');
+      bookedTableBody.innerHTML = '';
+      
+      if (child.bookedVaccines && child.bookedVaccines.length > 0) {
+        child.bookedVaccines.forEach(vaccine => {
+          const row = document.createElement('tr');
+          
+          // Calculate status for booked vaccine
+          let status = 'Scheduled';
+          if (child.nextVisit) {
+            const visitDate = new Date(child.nextVisit);
+            const today = new Date();
+            if (visitDate < today) {
+              status = '<span class="badge danger">Overdue</span>';
+            } else {
+              const diffTime = visitDate - today;
+              const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+              status = `<span class="badge warning">Due in ${diffDays} days</span>`;
+            }
+          }
+          
+          const actionsCell = mode === 'administer' ? 
+            `<td>
+              <button onclick="administerBookedVaccine('${child.id}', '${vaccine}')">💉 Administer</button>
+              <button onclick="removeBookedVaccine('${child.id}', '${vaccine}')" class="danger">🗑️ Remove</button>
+            </td>` : 
+            `<td></td>`;
+          
+          row.innerHTML = `
+            <td>${vaccine}</td>
+            <td>${child.nextVisit ? formatDate(child.nextVisit) : 'Not set'}</td>
+            <td>${status}</td>
+            ${actionsCell}
+          `;
+          bookedTableBody.appendChild(row);
+        });
+      } else {
+        const row = document.createElement('tr');
+        row.innerHTML = `<td colspan="${mode === 'administer' ? '4' : '3'}" style="text-align: center;">No upcoming vaccinations booked.</td>`;
+        bookedTableBody.appendChild(row);
+      }
+    }
+
+    function toggleViewMode(mode) {
+      const childId = document.getElementById('viewVaccinationModal').dataset.childId;
+      openViewVaccinationModal(childId, mode);
+    }
+
+    function administerBookedVaccine(childId, vaccineName) {
+      const child = appData.children.find(c => c.id === childId);
+      if (!child) return;
+      
+      // Remove from booked vaccines
+      child.bookedVaccines = child.bookedVaccines.filter(v => v !== vaccineName);
+      
+      // Add to immunizations with today's date
+      child.immunizations.push({
+        name: vaccineName,
+        dateGiven: new Date().toISOString().split('T')[0],
+        batchNumber: '',
+        placeGiven: appData.settings.facilityName,
+        healthWorker: appData.settings.defaultHealthWorker,
+        remarks: ''
+      });
+      
+      saveData();
+      showNotification(`${vaccineName} administered successfully`, 'success');
+      
+      // Refresh the modal
+      const mode = document.getElementById('viewVaccinationModal').dataset.mode;
+      openViewVaccinationModal(childId, mode);
+    }
+
+    function removeBookedVaccine(childId, vaccineName) {
+      if (confirm(`Are you sure you want to remove ${vaccineName} from booked vaccines?`)) {
+        const child = appData.children.find(c => c.id === childId);
+        if (!child) return;
+        
+        child.bookedVaccines = child.bookedVaccines.filter(v => v !== vaccineName);
+        
+        // If no more booked vaccines, clear next visit
+        if (child.bookedVaccines.length === 0) {
+          child.nextVisit = null;
+        }
+        
+        saveData();
+        showNotification(`${vaccineName} removed from booked vaccines`, 'success');
+        
+        // Refresh the modal
+        const mode = document.getElementById('viewVaccinationModal').dataset.mode;
+        openViewVaccinationModal(childId, mode);
+      }
+    }
+
+    function closeViewVaccinationModal() {
+      document.getElementById('viewVaccinationModal').style.display = 'none';
+    }
+
+    function proceedToNextStep() {
+      // Save immunization data first
+      if (!saveImmunizationData()) {
+        return; // Validation failed
+      }
+      
+      // Then open booking modal
+      closeModal();
+      openBookingModal();
+    }
+
+    function saveImmunizationData() {
+      const childId = document.getElementById('immunizationModal').dataset.childId;
+      const child = appData.children.find(c => c.id === childId);
+      if (!child) return false;
+      
+      const tableRows = document.getElementById('immunizationTable').querySelectorAll('tbody tr');
+      let hasValidationErrors = false;
+      
+      // Clear existing immunizations
+      child.immunizations = [];
+      
+      tableRows.forEach(row => {
+        const cells = row.querySelectorAll('td');
+        const vaccineName = cells[0].textContent;
+        const dateGiven = cells[2].querySelector('input').value;
+        const batchNumber = cells[3].querySelector('input').value;
+        const placeGiven = cells[4].querySelector('input').value;
+        const healthWorker = cells[5].querySelector('input').value;
+        const remarks = cells[6].querySelector('input').value;
+        
+        // Check if this vaccine is being administered (has date given)
+        if (dateGiven) {
+          // Validate required fields
+          if (!placeGiven || !healthWorker) {
+            hasValidationErrors = true;
+            showNotification(`Please fill all required fields for ${vaccineName}`, 'error');
+            return;
+          }
+          
+          child.immunizations.push({
+            name: vaccineName,
+            dateGiven: dateGiven,
+            batchNumber: batchNumber,
+            placeGiven: placeGiven,
+            healthWorker: healthWorker,
+            remarks: remarks
+          });
+        }
+      });
+      
+      if (hasValidationErrors) {
+        return false;
+      }
+      
+      saveData();
+      showNotification('Immunization records saved successfully', 'success');
+      return true;
+    }
+
+    function openBookingModal() {
+      const childId = document.getElementById('immunizationModal').dataset.childId;
+      const child = appData.children.find(c => c.id === childId);
+      if (!child) return;
+      
+      document.getElementById('bookingModal').style.display = 'block';
+      document.getElementById('bookingModal').dataset.childId = childId;
+      
+      // Check if child is 5 years or older
+      const childAgeDays = calculateAgeInDays(child.dob);
+      const isOver5Years = childAgeDays >= 1825; // 5 years = 1825 days
+      
+      if (isOver5Years) {
+        // Show completion section, hide booking form
+        document.getElementById('bookingForm').style.display = 'none';
+        document.getElementById('completionSection').style.display = 'block';
+        document.getElementById('completionMessage').style.display = 'block';
+      } else {
+        // Show booking form, hide completion section
+        document.getElementById('bookingForm').style.display = 'block';
+        document.getElementById('completionSection').style.display = 'none';
+        document.getElementById('completionMessage').style.display = 'none';
+        
+        const vaccineSelection = document.getElementById('vaccineSelection');
+        vaccineSelection.innerHTML = '';
+        
+        // Get vaccines that haven't been administered yet
+        const administeredVaccines = child.immunizations.map(imm => imm.name);
+        const pendingVaccines = vaccineSchedule.filter(vaccine => 
+          !administeredVaccines.includes(vaccine.name)
+        );
+        
+        pendingVaccines.forEach(vaccine => {
+          const checkbox = document.createElement('div');
+          checkbox.innerHTML = `
+            <label>
+              <input type="checkbox" value="${vaccine.name}">
+              ${vaccine.name} (${vaccine.recommendedAge})
+            </label>
+          `;
+          vaccineSelection.appendChild(checkbox);
+        });
+        
+        // Set default next visit date (2 weeks from today)
+        const nextVisitDate = new Date();
+        nextVisitDate.setDate(nextVisitDate.getDate() + 14);
+        document.getElementById('nextVisitDate').valueAsDate = nextVisitDate;
+      }
+    }
+
+    function closeBookingModal() {
+      document.getElementById('bookingModal').style.display = 'none';
+    }
+
+    function saveBooking() {
+      const childId = document.getElementById('bookingModal').dataset.childId;
+      const child = appData.children.find(c => c.id === childId);
+      if (!child) return;
+      
+      const selectedVaccines = [];
+      const checkboxes = document.getElementById('vaccineSelection').querySelectorAll('input[type="checkbox"]');
+      
+      checkboxes.forEach(checkbox => {
+        if (checkbox.checked) {
+          selectedVaccines.push(checkbox.value);
+        }
+      });
+      
+      const nextVisitDate = document.getElementById('nextVisitDate').value;
+      const reminder = document.getElementById('visitReminder').value;
+      
+      // Validate required fields
+      if (!nextVisitDate) {
+        showNotification('Please select a next visit date', 'error');
+        return;
+      }
+      
+      child.bookedVaccines = selectedVaccines;
+      child.nextVisit = nextVisitDate;
+      child.reminder = reminder;
+      
+      saveData();
+      closeBookingModal();
+      showNotification('Next visit booked successfully', 'success');
+      updateAppUI();
+    }
+
+    function markAsComplete() {
+      const childId = document.getElementById('bookingModal').dataset.childId;
+      const child = appData.children.find(c => c.id === childId);
+      if (!child) return;
+      
+      child.completed = true;
+      child.nextVisit = null;
+      child.bookedVaccines = [];
+      
+      saveData();
+      closeBookingModal();
+      showNotification('Child marked as completed successfully', 'success');
+      updateAppUI();
+    }
+
+    // Outreach Planning
+    function showOutreachModal() {
+      document.getElementById('outreachModal').style.display = 'block';
+      
+      const outreachVaccines = document.getElementById('outreachVaccines');
+      outreachVaccines.innerHTML = '';
+      
+      vaccineSchedule.forEach(vaccine => {
+        const checkbox = document.createElement('div');
+        checkbox.innerHTML = `
+          <label>
+            <input type="checkbox" value="${vaccine.name}">
+            ${vaccine.name}
+          </label>
+        `;
+        outreachVaccines.appendChild(checkbox);
+      });
+    }
+
+    function closeOutreachModal() {
+      document.getElementById('outreachModal').style.display = 'none';
+    }
+
+    function saveOutreachPlan() {
+      const community = document.getElementById('outreachCommunity').value;
+      const date = document.getElementById('outreachDate').value;
+      const team = document.getElementById('outreachTeam').value;
+      const objectives = document.getElementById('outreachObjectives').value;
+      
+      // Validate required fields
+      if (!community || !date) {
+        showNotification('Please fill all required fields', 'error');
+        return;
+      }
+      
+      const selectedVaccines = [];
+      const checkboxes = document.getElementById('outreachVaccines').querySelectorAll('input[type="checkbox"]');
+      
+      checkboxes.forEach(checkbox => {
+        if (checkbox.checked) {
+          selectedVaccines.push(checkbox.value);
+        }
+      });
+      
+      const outreachPlan = {
+        id: generateId(),
+        community: community,
+        date: date,
+        team: team,
+        objectives: objectives,
+        vaccines: selectedVaccines,
+        createdAt: new Date().toISOString()
+      };
+      
+      appData.outreachPlans.push(outreachPlan);
+      saveData();
+      closeOutreachModal();
+      showNotification('Outreach plan saved successfully', 'success');
+    }
+
+    // Follow-up Actions
+    function showFollowUpModal() {
+      document.getElementById('followUpModal').style.display = 'block';
+      
+      const followUpChild = document.getElementById('followUpChild');
+      followUpChild.innerHTML = '<option value="">Select Child</option>';
+      
+      appData.children.forEach(child => {
+        const option = document.createElement('option');
+        option.value = child.id;
+        option.textContent = `${child.name} (${child.regNo})`;
+        followUpChild.appendChild(option);
+      });
+    }
+
+    function closeFollowUpModal() {
+      document.getElementById('followUpModal').style.display = 'none';
+    }
+
+    function saveFollowUp() {
+      const childId = document.getElementById('followUpChild').value;
+      const type = document.getElementById('followUpType').value;
+      const date = document.getElementById('followUpDate').value;
+      const notes = document.getElementById('followUpNotes').value;
+      
+      if (!childId || !type || !date) {
+        showNotification('Please fill all required fields', 'error');
+        return;
+      }
+      
+      const followUp = {
+        id: generateId(),
+        childId: childId,
+        type: type,
+        date: date,
+        notes: notes,
+        createdAt: new Date().toISOString()
+      };
+      
+      appData.followUps.push(followUp);
+      
+      // Also add to child's follow-ups
+      const child = appData.children.find(c => c.id === childId);
+      if (child) {
+        if (!child.followUps) child.followUps = [];
+        child.followUps.push(followUp);
+      }
+      
+      saveData();
+      closeFollowUpModal();
+      showNotification('Follow-up action saved successfully', 'success');
+    }
+
+    // Dashboard functions
+    function updateDashboard() {
+      updateEPIStats();
+      updateStats();
+      updateAllRecordsTable();
+      updateDefaultersTable();
+      updateDueSoonTable();
+      updateUpcomingTable();
+      updateZeroDoseTable();
+    }
+
+    function updateEPIStats() {
+      const children = appData.children;
+      const totalChildren = children.length;
+      
+      // Calculate zero-dose children
+      const zeroDoseChildren = children.filter(child => child.immunizations.length === 0 && !child.completed);
+      
+      // Calculate fully immunized children
+      const fullyImmunized = children.filter(child => child.immunizations.length === vaccineSchedule.length || child.completed);
+      
+      // Calculate coverage rate
+      const coverageRate = totalChildren > 0 ? Math.round((fullyImmunized.length / totalChildren) * 100) : 0;
+      
+      // Calculate dropout rate (BCG to Measles)
+      const bcgGiven = children.filter(child => 
+        child.immunizations.some(imm => imm.name === 'BCG')
+      ).length;
+      
+      const measlesGiven = children.filter(child => 
+        child.immunizations.some(imm => imm.name === 'Measles1')
+      ).length;
+      
+      const dropoutRate = bcgGiven > 0 ? Math.round(((bcgGiven - measlesGiven) / bcgGiven) * 100) : 0;
+      
+      // Update EPI stats
+      document.getElementById('zeroDoseChildren').textContent = zeroDoseChildren.length;
+      document.getElementById('fullyImmunized').textContent = fullyImmunized.length;
+      document.getElementById('dropoutRate').textContent = `${dropoutRate}%`;
+      document.getElementById('coverageProgress').style.width = `${coverageRate}%`;
+      document.getElementById('coverageText').textContent = `Current: ${coverageRate}%`;
+    }
+
+    function updateStats() {
+      const children = appData.children;
+      const totalChildren = children.length;
+      
+      // Calculate defaulters (missed appointments by more than 7 days)
+      const defaulters = children.filter(child => {
+        if (!child.nextVisit || child.completed) return false;
+        const nextVisitDate = new Date(child.nextVisit);
+        const today = new Date();
+        const diffTime = today - nextVisitDate;
+        const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+        return diffDays > 7;
+      });
+      
+      // Calculate due soon (within next 7 days)
+      const dueSoon = children.filter(child => {
+        if (!child.nextVisit || child.completed) return false;
+        const nextVisitDate = new Date(child.nextVisit);
+        const today = new Date();
+        const diffTime = nextVisitDate - today;
+        const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+        return diffDays >= 0 && diffDays <= 7;
+      });
+      
+      // Calculate upcoming (within next 30 days)
+      const upcoming = children.filter(child => {
+        if (!child.nextVisit || child.completed) return false;
+        const nextVisitDate = new Date(child.nextVisit);
+        const today = new Date();
+        const diffTime = nextVisitDate - today;
+        const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+        return diffDays > 7 && diffDays <= 30;
+      });
+      
+      document.getElementById('totalChildren').textContent = totalChildren;
+      document.getElementById('totalDefaulters').textContent = defaulters.length;
+      document.getElementById('totalDueSoon').textContent = dueSoon.length;
+      document.getElementById('totalUpcoming').textContent = upcoming.length;
+    }
+
+    function updateAllRecordsTable() {
+      const children = appData.children;
+      const tableBody = document.getElementById('allRecordsTable').querySelector('tbody');
+      tableBody.innerHTML = '';
+      
+      children.forEach(child => {
+        const completedVaccines = child.immunizations.length;
+        const bookedVaccines = child.bookedVaccines.length;
+        const nextVisit = child.nextVisit ? formatDate(child.nextVisit) : 'Not scheduled';
+        
+        // Determine status
+        let status = 'Up to date';
+        if (child.completed) {
+          status = '<span class="badge success">Completed</span>';
+        } else if (child.nextVisit) {
+          const nextVisitDate = new Date(child.nextVisit);
+          const today = new Date();
+          const diffTime = today - nextVisitDate;
+          const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+          
+          if (diffDays > 7) {
+            status = '<span class="badge danger">Defaulter</span>';
+          } else if (diffDays >= 0) {
+            status = '<span class="badge warning">Due</span>';
+          } else {
+            status = '<span class="badge">Scheduled</span>';
+          }
+        }
+        
+        const row = document.createElement('tr');
+        row.innerHTML = `
+          <td>${child.regNo}</td>
+          <td>${child.name}</td>
+          <td>${completedVaccines}/${vaccineSchedule.length}</td>
+          <td>${bookedVaccines}</td>
+          <td>${nextVisit}</td>
+          <td>${status}</td>
+          <td>
+            <button onclick="openImmunizationModal('${child.id}')">💉 Update</button>
+            <button onclick="openViewVaccinationModal('${child.id}', 'view')">👁️ View</button>
+            <button onclick="sendReminder('${child.id}')">📧 Remind</button>
+          </td>
+        `;
+        
+        tableBody.appendChild(row);
+      });
+    }
+
+    function updateDefaultersTable() {
+      const children = appData.children;
+      const tableBody = document.getElementById('defaultersTable').querySelector('tbody');
+      tableBody.innerHTML = '';
+      
+      const defaulters = children.filter(child => {
+        if (!child.nextVisit || child.completed) return false;
+        const nextVisitDate = new Date(child.nextVisit);
+        const today = new Date();
+        const diffTime = today - nextVisitDate;
+        const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+        return diffDays > 7;
+      });
+      
+      defaulters.forEach(child => {
+        const nextVisitDate = new Date(child.nextVisit);
+        const today = new Date();
+        const diffTime = today - nextVisitDate;
+        const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+        const missedVaccine = child.bookedVaccines.length > 0 ? child.bookedVaccines[0] : 'Unknown';
+        
+        const row = document.createElement('tr');
+        row.innerHTML = `
+          <td>${child.regNo}</td>
+          <td>${child.name}</td>
+          <td>${missedVaccine}</td>
+         <td>${formatDate(child.nextVisit)}</td>
+          <td>${diffDays}</td>
+          <td>${child.contact || 'N/A'}</td>
+          <td>
+            <button onclick="openImmunizationModal('${child.id}')">💉 Update</button>
+            <button onclick="openViewVaccinationModal('${child.id}', 'view')">👁️ View</button>
+            <button onclick="sendReminder('${child.id}')">📧 Remind</button>
+          </td>
+        `;
+        
+        tableBody.appendChild(row);
+      });
+    }
+
+    function updateDueSoonTable() {
+      const children = appData.children;
+      const tableBody = document.getElementById('dueSoonTable').querySelector('tbody');
+      tableBody.innerHTML = '';
+      
+      const dueSoon = children.filter(child => {
+        if (!child.nextVisit || child.completed) return false;
+        const nextVisitDate = new Date(child.nextVisit);
+        const today = new Date();
+        const diffTime = nextVisitDate - today;
+        const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+        return diffDays >= 0 && diffDays <= 7;
+      });
+      
+      dueSoon.forEach(child => {
+        const nextVisitDate = new Date(child.nextVisit);
+        const today = new Date();
+        const diffTime = nextVisitDate - today;
+        const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+        const dueVaccine = child.bookedVaccines.length > 0 ? child.bookedVaccines.join(', ') : 'Unknown';
+        
+        const row = document.createElement('tr');
+        row.innerHTML = `
+          <td>${child.regNo}</td>
+          <td>${child.name}</td>
+          <td>${dueVaccine}</td>
+          <td>${formatDate(child.nextVisit)}</td>
+          <td>${diffDays}</td>
+          <td>${child.contact || 'N/A'}</td>
+          <td>
+            <button onclick="openImmunizationModal('${child.id}')">💉 Update</button>
+            <button onclick="openViewVaccinationModal('${child.id}', 'view')">👁️ View</button>
+            <button onclick="sendReminder('${child.id}')">📧 Remind</button>
+          </td>
+        `;
+        
+        tableBody.appendChild(row);
+      });
+    }
+
+    function updateUpcomingTable() {
+      const children = appData.children;
+      const tableBody = document.getElementById('upcomingTable').querySelector('tbody');
+      tableBody.innerHTML = '';
+      
+      const upcoming = children.filter(child => {
+        if (!child.nextVisit || child.completed) return false;
+        const nextVisitDate = new Date(child.nextVisit);
+        const today = new Date();
+        const diffTime = nextVisitDate - today;
+        const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+        return diffDays > 7 && diffDays <= 30;
+      });
+      
+      upcoming.forEach(child => {
+        const nextVisitDate = new Date(child.nextVisit);
+        const today = new Date();
+        const diffTime = nextVisitDate - today;
+        const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+        const scheduledVaccine = child.bookedVaccines.length > 0 ? child.bookedVaccines.join(', ') : 'Unknown';
+        
+        const row = document.createElement('tr');
+        row.innerHTML = `
+          <td>${child.regNo}</td>
+          <td>${child.name}</td>
+          <td>${scheduledVaccine}</td>
+          <td>${formatDate(child.nextVisit)}</td>
+          <td>${diffDays}</td>
+          <td>${child.contact || 'N/A'}</td>
+          <td>
+            <button onclick="openImmunizationModal('${child.id}')">💉 Update</button>
+            <button onclick="openViewVaccinationModal('${child.id}', 'view')">👁️ View</button>
+            <button onclick="sendReminder('${child.id}')">📧 Remind</button>
+          </td>
+        `;
+        
+        tableBody.appendChild(row);
+      });
+    }
+
+    function updateZeroDoseTable() {
+      const children = appData.children;
+      const tableBody = document.getElementById('zeroDoseTable').querySelector('tbody');
+      tableBody.innerHTML = '';
+      
+      const zeroDoseChildren = children.filter(child => child.immunizations.length === 0 && !child.completed);
+      
+      zeroDoseChildren.forEach(child => {
+        const row = document.createElement('tr');
+        row.innerHTML = `
+          <td>${child.regNo}</td>
+          <td>${child.name}</td>
+          <td>${formatDate(child.dob)}</td>
+          <td>${calculateAge(child.dob)}</td>
+          <td>${child.address}</td>
+          <td>${child.motherName || 'N/A'}</td>
+          <td>${child.fatherName || 'N/A'}</td>
+          <td>${child.contact || 'N/A'}</td>
+          <td>
+            <button onclick="openImmunizationModal('${child.id}')">💉 Update</button>
+            <button onclick="openViewVaccinationModal('${child.id}', 'view')">👁️ View</button>
+            <button onclick="showFollowUpModalForChild('${child.id}')">📝 Follow-up</button>
+          </td>
+        `;
+        
+        tableBody.appendChild(row);
+      });
+    }
+
+    function openTab(tabName) {
+      // Hide all tab content
+      const tabContents = document.querySelectorAll('.tab-content');
+      tabContents.forEach(tab => {
+        tab.classList.remove('active');
+      });
+      
+      // Remove active class from all tab buttons
+      const tabButtons = document.querySelectorAll('.tab-button');
+      tabButtons.forEach(button => {
+        button.classList.remove('active');
+      });
+      
+      // Show the specific tab content and activate the button
+      document.getElementById(tabName).classList.add('active');
+      event.currentTarget.classList.add('active');
+    }
+
+    // Today's appointments
+    function showTodayAppointments() {
+      document.getElementById('todayAppointmentsModal').style.display = 'block';
+      
+      const tableBody = document.getElementById('todayAppointmentsTable').querySelector('tbody');
+      tableBody.innerHTML = '';
+      
+      const today = new Date().toISOString().split('T')[0];
+      
+      const todayAppointments = appData.children.filter(child => 
+        child.nextVisit === today && !child.completed
+      );
+      
+      todayAppointments.forEach(child => {
+        const scheduledVaccine = child.bookedVaccines.length > 0 ? child.bookedVaccines.join(', ') : 'Unknown';
+        
+        const row = document.createElement('tr');
+        row.innerHTML = `
+          <td>${child.regNo}</td>
+          <td>${child.name}</td>
+          <td>${scheduledVaccine}</td>
+          <td>${child.contact || 'N/A'}</td>
+          <td>
+            <button onclick="openImmunizationModal('${child.id}')">💉 Update</button>
+            <button onclick="openViewVaccinationModal('${child.id}', 'view')">👁️ View</button>
+          </td>
+        `;
+        
+        tableBody.appendChild(row);
+      });
+      
+      if (todayAppointments.length === 0) {
+        const row = document.createElement('tr');
+        row.innerHTML = `<td colspan="5" style="text-align: center;">No appointments scheduled for today</td>`;
+        tableBody.appendChild(row);
+      }
+    }
+
+    function closeTodayAppointmentsModal() {
+      document.getElementById('todayAppointmentsModal').style.display = 'none';
+    }
+
+    // Edit child functions
+    function openEditChildModal(childId) {
+      const child = appData.children.find(c => c.id === childId);
+      if (!child) return;
+      
+      document.getElementById('editChildModal').style.display = 'block';
+      document.getElementById('editChildModal').dataset.childId = childId;
+      
+      document.getElementById('editChildName').value = child.name;
+      document.getElementById('editDob').value = child.dob;
+      document.getElementById('editSex').value = child.sex;
+      document.getElementById('editAddress').value = child.address;
+      document.getElementById('editContact').value = child.contact || '';
+      document.getElementById('editMotherName').value = child.motherName || '';
+      document.getElementById('editFatherName').value = child.fatherName || '';
+    }
+
+    function closeEditChildModal() {
+      document.getElementById('editChildModal').style.display = 'none';
+    }
+
+    function saveEditedChild() {
+      const childId = document.getElementById('editChildModal').dataset.childId;
+      const child = appData.children.find(c => c.id === childId);
+      if (!child) return;
+      
+      child.name = document.getElementById('editChildName').value;
+      child.dob = document.getElementById('editDob').value;
+      child.sex = document.getElementById('editSex').value;
+      child.address = document.getElementById('editAddress').value;
+      child.contact = document.getElementById('editContact').value;
+      child.motherName = document.getElementById('editMotherName').value;
+      child.fatherName = document.getElementById('editFatherName').value;
+      
+      saveData();
+      updateCommunityFilter();
+      closeEditChildModal();
+      updateAppUI();
+      showNotification('Child details updated successfully', 'success');
+    }
+
+    // Data management functions
+    function exportToCSV() {
+      const children = appData.children;
+      let csvContent = "data:text/csv;charset=utf-8,";
+      
+      // Headers
+      csvContent += "Registration Number,Name,Date of Birth,Age,Sex,Address,Contact,Mother's Name,Father's Name,Registered Date,Vaccines Completed\n";
+      
+      // Data
+      children.forEach(child => {
+        const row = [
+          child.regNo,
+          `"${child.name}"`,
+          child.dob,
+          calculateAge(child.dob),
+          child.sex,
+          `"${child.address}"`,
+          child.contact || '',
+          `"${child.motherName || ''}"`,
+          `"${child.fatherName || ''}"`,
+          formatDate(child.createdAt),
+          child.immunizations.length
+        ].join(',');
+        
+        csvContent += row + "\n";
+      });
+      
+      // Create download link
+      const encodedUri = encodeURI(csvContent);
+      const link = document.createElement("a");
+      link.setAttribute("href", encodedUri);
+      link.setAttribute("download", "immunization_register.csv");
+      document.body.appendChild(link);
+      
+      // Trigger download
+      link.click();
+      document.body.removeChild(link);
+      
+      showNotification('Data exported to CSV successfully', 'success');
+    }
+
+    function printRecords() {
+      window.print();
+    }
+
+    function backupData() {
+      const dataStr = JSON.stringify(appData, null, 2);
+      const dataBlob = new Blob([dataStr], {type: 'application/json'});
+      
+      const url = URL.createObjectURL(dataBlob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `immunization_backup_${new Date().toISOString().split('T')[0]}.json`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+      
+      showNotification('Data backed up successfully', 'success');
+    }
+
+    // Enhanced backup with encryption
+    function encryptData(data) {
+      // Simple base64 encoding for basic obfuscation
+      return btoa(JSON.stringify(data));
+    }
+
+    function decryptData(encryptedData) {
+      try {
+        return JSON.parse(atob(encryptedData));
+      } catch (error) {
+        throw new Error('Invalid backup file');
+      }
+    }
+
+    function createEncryptedBackup() {
+      const encryptedData = encryptData(appData);
+      const dataBlob = new Blob([encryptedData], { type: 'text/plain' });
+      
+      const url = URL.createObjectURL(dataBlob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `immunization_backup_encrypted_${new Date().toISOString().split('T')[0]}.txt`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+      
+      showNotification('Encrypted backup created successfully', 'success');
+    }
+
+    function handleRestoreData(e) {
+      const file = e.target.files[0];
+      if (!file) return;
+      
+      const reader = new FileReader();
+      reader.onload = function(event) {
+        try {
+          let restoredData;
+          
+          // Check if file is encrypted (base64) or regular JSON
+          if (file.name.endsWith('.txt')) {
+            // Try to decrypt
+            restoredData = decryptData(event.target.result);
+          } else {
+            // Regular JSON
+            restoredData = JSON.parse(event.target.result);
+          }
+          
+          if (confirm('This will replace all current data. Are you sure?')) {
+            appData = restoredData;
+            saveData();
+            updateAppUI();
+            updateCommunityFilter();
+            showNotification('Data restored successfully', 'success');
+          }
+        } catch (error) {
+          showNotification('Error restoring data: Invalid file format', 'error');
+        }
+      };
+      
+      reader.readAsText(file);
+      
+      // Reset file input
+      e.target.value = '';
+    }
+
+    function clearAllData() {
+      if (confirm('This will permanently delete all data. This action cannot be undone. Are you sure?')) {
+        if (confirm('This is your final warning. All children records and data will be deleted. Continue?')) {
+          appData = {
+            children: [],
+            outreachPlans: [],
+            followUps: [],
+            settings: {
+              defaultHealthWorker: '',
+              reminderDays: 3,
+              facilityName: 'Local Health Facility',
+              language: 'en',
+              lastUpdated: new Date().toISOString()
+            },
+            userId: appData.userId,
+            lastSync: null
+          };
+          
+          saveData();
+          updateCommunityFilter();
+          updateAppUI();
+          showNotification('All data cleared successfully', 'success');
+        }
+      }
+    }
+
+    // Helper functions
+    function generateId() {
+      return '_' + Math.random().toString(36).substr(2, 9);
+    }
+
+    function generateRegistrationNumber() {
+      const date = new Date();
+      const year = date.getFullYear().toString().substr(-2);
+      const month = (date.getMonth() + 1).toString().padStart(2, '0');
+      const random = Math.floor(Math.random() * 1000).toString().padStart(3, '0');
+      return `CH${year}${month}${random}`;
+    }
+
+    function formatDate(dateString) {
+      if (!dateString) return 'N/A';
+      const date = new Date(dateString);
+      return date.toLocaleDateString('en-GB');
+    }
+
+    function calculateAge(dobString) {
+      const dob = new Date(dobString);
+      const today = new Date();
+      const diffTime = today - dob;
+      const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+      
+      if (diffDays < 7) {
+        return `${diffDays} day${diffDays !== 1 ? 's' : ''} old`;
+      } else if (diffDays < 30) {
+        const weeks = Math.floor(diffDays / 7);
+        return `${weeks} week${weeks !== 1 ? 's' : ''} old`;
+      } else if (diffDays < 365) {
+        const months = Math.floor(diffDays / 30);
+        return `${months} month${months !== 1 ? 's' : ''} old`;
+      } else {
+        const years = Math.floor(diffDays / 365);
+        const remainingMonths = Math.floor((diffDays % 365) / 30);
+        if (remainingMonths > 0) {
+          return `${years} year${years !== 1 ? 's' : ''}, ${remainingMonths} month${remainingMonths !== 1 ? 's' : ''} old`;
+        } else {
+          return `${years} year${years !== 1 ? 's' : ''} old`;
+        }
+      }
+    }
+
+    function calculateAgeInMonths(dobString) {
+      const dob = new Date(dobString);
+      const today = new Date();
+      let months = (today.getFullYear() - dob.getFullYear()) * 12;
+      months -= dob.getMonth();
+      months += today.getMonth();
+      return months <= 0 ? 0 : months;
+    }
+
+    function calculateAgeInDays(dobString) {
+      const dob = new Date(dobString);
+      const today = new Date();
+      const diffTime = today - dob;
+      return Math.floor(diffTime / (1000 * 60 * 60 * 24));
+    }
+
+    function showNotification(message, type) {
+      const notificationArea = document.getElementById('notificationArea');
+      const notification = document.createElement('div');
+      notification.className = `notification ${type}`;
+      notification.textContent = message;
+      
+      notificationArea.appendChild(notification);
+      
+      // Auto remove after 5 seconds
+      setTimeout(() => {
+        notification.remove();
+      }, 5000);
+    }
+
+    function sendReminder(childId) {
+      const child = appData.children.find(c => c.id === childId);
+      if (!child) return;
+      
+      if (child.contact) {
+        showNotification(`Reminder sent to ${child.contact} for ${child.name}`, 'success');
+      } else {
+        showNotification(`No contact information available for ${child.name}`, 'error');
+      }
+    }
+
+    function showFollowUpModalForChild(childId) {
+      showFollowUpModal();
+      document.getElementById('followUpChild').value = childId;
+    }
+
+    function openHelpModal() {
+      document.getElementById('helpModal').style.display = 'block';
+    }
+
+    function closeHelpModal() {
+      document.getElementById('helpModal').style.display = 'none';
+    }
+
+    // Enhanced reporting and analytics
+    function generateMonthlyReport() {
+      const now = new Date();
+      const month = now.getMonth() + 1;
+      const year = now.getFullYear();
+      
+      const monthlyData = {
+        month: month,
+        year: year,
+        totalRegistered: appData.children.length,
+        newRegistrations: appData.children.filter(child => {
+          const regDate = new Date(child.createdAt);
+          return regDate.getMonth() + 1 === month && regDate.getFullYear() === year;
+        }).length,
+        vaccinesAdministered: appData.children.reduce((total, child) => {
+          return total + child.immunizations.filter(imm => {
+            const immDate = new Date(imm.dateGiven);
+            return immDate.getMonth() + 1 === month && immDate.getFullYear() === year;
+          }).length;
+        }, 0),
+        defaulters: calculateDefaulters(),
+        coverageRate: calculateCoverageRate()
+      };
+      
+      return monthlyData;
+    }
+
+    function calculateDefaulters() {
+      return appData.children.filter(child => {
+        if (!child.nextVisit || child.completed) return false;
+        const nextVisitDate = new Date(child.nextVisit);
+        const today = new Date();
+        const diffTime = today - nextVisitDate;
+        const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+        return diffDays > 7;
+      }).length;
+    }
+
+    function calculateCoverageRate() {
+      const children = appData.children;
+      if (children.length === 0) return 0;
+      
+      const fullyImmunized = children.filter(child => 
+        child.immunizations.length === vaccineSchedule.length || child.completed
+      ).length;
+      
+      return Math.round((fullyImmunized / children.length) * 100);
+    }
+
+    function showDataAnalytics() {
+      const analytics = generateMonthlyReport();
+      const communities = [...new Set(appData.children.map(child => child.address))];
+      
+      const analyticsHTML = `
+        <div class="report-card">
+          <div class="report-header">
+            <h3>📊 Monthly Analytics - ${new Date().toLocaleDateString('en-GB', { month: 'long', year: 'numeric' })}</h3>
+            <button onclick="exportAnalytics()" style="padding: 8px 16px; background: var(--ghs-green); color: white; border: none; border-radius: 6px; cursor: pointer;">Export Report</button>
+          </div>
+          <div class="report-stats">
+            <div class="report-stat">
+              <div class="report-value">${analytics.totalRegistered}</div>
+              <div class="report-label">Total Children</div>
+            </div>
+            <div class="report-stat">
+              <div class="report-value">${analytics.newRegistrations}</div>
+              <div class="report-label">New This Month</div>
+            </div>
+            <div class="report-stat">
+              <div class="report-value">${analytics.vaccinesAdministered}</div>
+              <div class="report-label">Vaccines Given</div>
+            </div>
+            <div class="report-stat">
+              <div class="report-value">${analytics.defaulters}</div>
+              <div class="report-label">Current Defaulters</div>
+            </div>
+            <div class="report-stat">
+              <div class="report-value">${analytics.coverageRate}%</div>
+              <div class="report-label">Coverage Rate</div>
+            </div>
+          </div>
+        </div>
+        
+        <div class="report-card">
+          <h3>📍 Community Distribution</h3>
+          <div style="margin-top: 15px;">
+            ${communities.map(community => {
+              const count = appData.children.filter(child => child.address === community).length;
+              const percentage = Math.round((count / appData.children.length) * 100);
+              return `
+                <div style="margin: 10px 0;">
+                  <div style="display: flex; justify-content: space-between; margin-bottom: 5px;">
+                    <span>${community}</span>
+                    <span>${count} (${percentage}%)</span>
+                  </div>
+                  <div class="progress-container">
+                    <div class="progress-bar" style="width: ${percentage}%"></div>
+                  </div>
+                </div>
+              `;
+            }).join('')}
+          </div>
+        </div>
+      `;
+      
+      // Create or update analytics section
+      let analyticsSection = document.getElementById('analyticsSection');
+      if (!analyticsSection) {
+        analyticsSection = document.createElement('div');
+        analyticsSection.id = 'analyticsSection';
+        document.getElementById('settings').appendChild(analyticsSection);
+      }
+      analyticsSection.innerHTML = analyticsHTML;
+    }
+
+    function generateMonthlyReportCard() {
+      showDataAnalytics();
+      scrollToSection('settings');
+    }
+
+    function showCommunityAnalysis() {
+      showDataAnalytics();
+      scrollToSection('settings');
+    }
+
+    function showDefaulters() {
+      showSection('dashboard');
+      setTimeout(() => {
+        openTab('defaulters');
+      }, 100);
+    }
+
+    function exportAnalytics() {
+      const analytics = generateMonthlyReport();
+      let csvContent = "data:text/csv;charset=utf-8,";
+      
+      // Headers
+      csvContent += "Metric,Value\n";
+      
+      // Data
+      csvContent += `Total Children,${analytics.totalRegistered}\n`;
+      csvContent += `New Registrations This Month,${analytics.newRegistrations}\n`;
+      csvContent += `Vaccines Administered This Month,${analytics.vaccinesAdministered}\n`;
+      csvContent += `Current Defaulters,${analytics.defaulters}\n`;
+      csvContent += `Coverage Rate,${analytics.coverageRate}%\n`;
+      
+      // Create download link
+      const encodedUri = encodeURI(csvContent);
+      const link = document.createElement("a");
+      link.setAttribute("href", encodedUri);
+      link.setAttribute("download", `immunization_analytics_${new Date().toISOString().split('T')[0]}.csv`);
+      document.body.appendChild(link);
+      
+      // Trigger download
+      link.click();
+      document.body.removeChild(link);
+      
+      showNotification('Analytics exported to CSV successfully', 'success');
+    }
+
+    // Update the entire app UI
+    function updateAppUI() {
+      // Update child health register
+      updateChildHealthRegister();
+      
+      // Update dashboard
+      updateDashboard();
+    }
+
+    // Initialize with some demo data if empty
+    if (appData.children.length === 0 && !currentUser) {
+      // Add a demo child
+      const demoChild = {
+        id: generateId(),
+        regNo: generateRegistrationNumber(),
+        name: 'Demo Child',
+        dob: '2023-01-15',
+        sex: 'Male',
+        address: 'Demo Community',
+        contact: '0241234567',
+        motherName: 'Demo Mother',
+        fatherName: 'Demo Father',
+        immunizations: [
+          {
+            name: 'BCG',
+            dateGiven: '2023-01-15',
+            batchNumber: 'BCG2023A',
+            placeGiven: 'Demo Health Center',
+            healthWorker: 'Demo Health Worker',
+            remarks: ''
+          }
+        ],
+        nextVisit: null,
+        bookedVaccines: ['OPV1', 'Penta1'],
+        followUps: [],
+        completed: false,
+        createdAt: new Date().toISOString()
+      };
+      
+      appData.children.push(demoChild);
+      
+      saveData();
+    }
+  </script>
+</body>
+</html>
