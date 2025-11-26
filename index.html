@@ -1635,7 +1635,7 @@
         
         <div class="mobile-nav-item">
           <a href="#" class="mobile-nav-link" onclick="toggleMobileDropdown('mobileRecordsDropdown')">
-            📋 Records ▶
+            📋 Records ▸
           </a>
           <div class="mobile-dropdown-menu" id="mobileRecordsDropdown">
             <a href="#" class="mobile-dropdown-item" onclick="showSection('childHealthRegister'); toggleMobileMenu();">Child Health Register</a>
@@ -1647,7 +1647,7 @@
         
         <div class="mobile-nav-item">
           <a href="#" class="mobile-nav-link" onclick="toggleMobileDropdown('mobileActionsDropdown')">
-            ⚡ Actions ▶
+            ⚡ Actions ▸
           </a>
           <div class="mobile-dropdown-menu" id="mobileActionsDropdown">
             <a href="#" class="mobile-dropdown-item" onclick="showOutreachModal(); toggleMobileMenu();">Outreach Planning</a>
@@ -1791,13 +1791,10 @@
         <input type="text" id="address" required>
 
         <label for="contact">Contact (Caregiver):</label>
-        <input type="text" id="contact" placeholder="0241234567">
+        <input type="text" id="contact" placeholder="Phone number">
 
         <label for="motherName" class="required">Mother's Name:</label>
         <input type="text" id="motherName" required>
-
-        <label for="fatherName" class="required">Father's Name:</label>
-        <input type="text" id="fatherName" required>
 
         <button type="submit">✅ Register Child</button>
       </form>
@@ -1845,7 +1842,6 @@
             <th>Sex</th>
             <th>Community</th>
             <th>Mother's Name</th>
-            <th>Father's Name</th>
             <th>Contact</th>
             <th>Status</th>
             <th>Actions</th>
@@ -1862,7 +1858,7 @@
         <button onclick="backupData()">💽 Backup Data</button>
         <button onclick="createEncryptedBackup()">🔐 Encrypted Backup</button>
         <input type="file" id="restoreFile" accept=".json,.txt" style="display: none;">
-        <button onclick="document.getElementById('restoreFile').click()">📥 Restore Data</button>
+        <button onclick="document.getElementById('restoreFile').click()">📤 Restore Data</button>
         <button onclick="openHelpModal()">❓ Help/Instructions</button>
       </div>
     </section>
@@ -1965,7 +1961,6 @@
                 <th>Age</th>
                 <th>Community</th>
                 <th>Mother's Name</th>
-                <th>Father's Name</th>
                 <th>Contact</th>
                 <th>Actions</th>
               </tr>
@@ -1985,10 +1980,6 @@
       <div class="settings-group">
         <h3>System Preferences</h3>
         <div class="settings-options">
-          <div class="form-group">
-            <label for="defaultHealthWorker" class="required">Default Health Worker:</label>
-            <input type="text" id="defaultHealthWorker" placeholder="Enter default health worker name" required>
-          </div>
           <div class="form-group">
             <label for="reminderDays">Reminder Days Before Appointment:</label>
             <select id="reminderDays">
@@ -2016,7 +2007,7 @@
         <h3>Data Management</h3>
         <div class="action-buttons">
           <button onclick="exportAllData()">💾 Export All Data</button>
-          <button onclick="importData()">📥 Import Data</button>
+          <button onclick="importData()">📤 Import Data</button>
           <button onclick="syncData()">🔄 Sync Data Now</button>
           <button onclick="resetSettings()">🔄 Reset Settings</button>
         </div>
@@ -2049,9 +2040,7 @@
               <th>Vaccine</th>
               <th>Recommended Age</th>
               <th>Date Given</th>
-              <th>Batch Number</th>
               <th>Place Given</th>
-              <th>Health Worker</th>
               <th>Remarks</th>
               <th>Status</th>
               <th>Actions</th>
@@ -2087,9 +2076,7 @@
             <tr>
               <th>Vaccine</th>
               <th>Date Given</th>
-              <th>Batch Number</th>
               <th>Place Given</th>
-              <th>Health Worker</th>
               <th>Remarks</th>
             </tr>
           </thead>
@@ -2229,13 +2216,10 @@
           <input type="text" id="editAddress" required>
 
           <label for="editContact">Contact (Caregiver):</label>
-          <input type="text" id="editContact">
+          <input type="text" id="editContact" placeholder="Phone number">
 
           <label for="editMotherName" class="required">Mother's Name:</label>
           <input type="text" id="editMotherName" required>
-
-          <label for="editFatherName" class="required">Father's Name:</label>
-          <input type="text" id="editFatherName" required>
 
           <button type="button" onclick="saveEditedChild()" style="padding: 14px 24px; background: var(--ghs-green); color: white; border: none; border-radius: 8px; font-weight: 600; cursor: pointer; margin-top: 16px;">💾 Save Changes</button>
         </form>
@@ -2436,7 +2420,6 @@
       outreachPlans: [],
       followUps: [],
       settings: {
-        defaultHealthWorker: '',
         reminderDays: 3,
         facilityName: 'Local Health Facility',
         language: 'en',
@@ -2572,19 +2555,63 @@
       toggleAuthForm(); // Reset to login form
     }
 
-    // Firebase Authentication Handlers
+    // Updated login form handler with complete error handling
     document.getElementById('loginForm').addEventListener('submit', async function(e) {
       e.preventDefault();
       
-      const email = document.getElementById('loginEmail').value;
+      const email = document.getElementById('loginEmail').value.trim(); // Trim to prevent space errors
       const password = document.getElementById('loginPassword').value;
+      
+      // Basic validation before Firebase attempt
+      if (!email) {
+        showNotification('Please enter your email address', 'error');
+        return;
+      }
+      
+      if (!password) {
+        showNotification('Please enter your password', 'error');
+        return;
+      }
       
       try {
         const { signInWithEmailAndPassword, auth } = window.firebase;
         await signInWithEmailAndPassword(auth, email, password);
-        // Auth state change will handle the rest
+        // Auth state change will handle the rest - existing behavior preserved
       } catch (error) {
-        showNotification('Login failed: ' + error.message, 'error');
+        // Comprehensive Firebase error handling
+        let errorMessage = 'Login failed. Please check your details.';
+        
+        switch (error.code) {
+          case 'auth/user-not-found':
+            errorMessage = 'This account does not exist.';
+            break;
+          case 'auth/wrong-password':
+            errorMessage = 'Wrong password. Please try again.';
+            break;
+          case 'auth/invalid-email':
+            errorMessage = 'Invalid email format.';
+            break;
+          case 'auth/missing-password':
+            errorMessage = 'Please enter your password.';
+            break;
+          case 'auth/invalid-credential':
+            errorMessage = 'Invalid email or password.';
+            break;
+          case 'auth/too-many-requests':
+            errorMessage = 'Too many failed attempts. Please try again later.';
+            break;
+          case 'auth/user-disabled':
+            errorMessage = 'This account has been disabled.';
+            break;
+          case 'auth/network-request-failed':
+            errorMessage = 'Network error. Please check your connection.';
+            break;
+          default:
+            errorMessage = `Login failed: ${error.message}`;
+        }
+        
+        showNotification(errorMessage, 'error');
+        console.error('Login error:', error.code, error.message);
       }
     });
 
@@ -2897,7 +2924,6 @@
     // Initialize settings UI
     function initializeSettings() {
       if (appData.settings) {
-        document.getElementById('defaultHealthWorker').value = appData.settings.defaultHealthWorker || '';
         document.getElementById('reminderDays').value = appData.settings.reminderDays || 3;
         document.getElementById('facilityName').value = appData.settings.facilityName || 'Local Health Facility';
         document.getElementById('language').value = appData.settings.language || 'en';
@@ -2931,7 +2957,6 @@
     // Save settings
     function saveSettings() {
       appData.settings = {
-        defaultHealthWorker: document.getElementById('defaultHealthWorker').value,
         reminderDays: parseInt(document.getElementById('reminderDays').value),
         facilityName: document.getElementById('facilityName').value,
         language: document.getElementById('language').value,
@@ -2949,7 +2974,6 @@
     function resetSettings() {
       if (confirm('Are you sure you want to reset all settings to default values?')) {
         appData.settings = {
-          defaultHealthWorker: '',
           reminderDays: 3,
           facilityName: 'Local Health Facility',
           language: 'en',
@@ -3016,11 +3040,13 @@
       document.getElementById('registrationForm').addEventListener('submit', function(e) {
         e.preventDefault();
         
-        const phone = document.getElementById('contact').value;
         const dob = document.getElementById('dob').value;
+        const childName = document.getElementById('childName').value;
+        const motherName = document.getElementById('motherName').value;
         
-        if (phone && !validateGhanaPhoneNumber(phone)) {
-          showNotification('Please enter a valid Ghanaian phone number (e.g., 0241234567)', 'error');
+        // Check for duplicate registration
+        if (isDuplicateRegistration(childName, motherName, dob)) {
+          showNotification('This child appears to be already registered. Please check the records.', 'error');
           return;
         }
         
@@ -3037,11 +3063,6 @@
     }
 
     // Enhanced data validation
-    function validateGhanaPhoneNumber(phone) {
-      const ghanaPhoneRegex = /^(?:\+233|0)[234][0-9]{8}$/;
-      return ghanaPhoneRegex.test(phone.replace(/\s/g, ''));
-    }
-
     function validateChildAge(dob) {
       const birthDate = new Date(dob);
       const today = new Date();
@@ -3049,6 +3070,15 @@
       
       // Children should be 0-5 years for immunization
       return ageInYears >= 0 && ageInYears <= 5;
+    }
+
+    // Check for duplicate registration
+    function isDuplicateRegistration(childName, motherName, dob) {
+      return appData.children.some(child => 
+        child.name.toLowerCase() === childName.toLowerCase() &&
+        child.motherName.toLowerCase() === motherName.toLowerCase() &&
+        child.dob === dob
+      );
     }
 
     // Check online status and update UI
@@ -3094,7 +3124,6 @@
       const address = document.getElementById('address').value;
       const contact = document.getElementById('contact').value;
       const motherName = document.getElementById('motherName').value;
-      const fatherName = document.getElementById('fatherName').value;
       
       // Generate registration number
       const regNo = generateRegistrationNumber();
@@ -3109,7 +3138,6 @@
         address: address,
         contact: contact,
         motherName: motherName,
-        fatherName: fatherName,
         immunizations: [],
         nextVisit: null,
         bookedVaccines: [],
@@ -3161,7 +3189,6 @@
           <td>${child.sex}</td>
           <td>${child.address}</td>
           <td>${child.motherName || 'N/A'}</td>
-          <td>${child.fatherName || 'N/A'}</td>
           <td>${child.contact || 'N/A'}</td>
           <td>${statusBadge}</td>
           <td>
@@ -3211,7 +3238,6 @@
           <td>${child.sex}</td>
           <td>${child.address}</td>
           <td>${child.motherName || 'N/A'}</td>
-          <td>${child.fatherName || 'N/A'}</td>
           <td>${child.contact || 'N/A'}</td>
           <td>${statusBadge}</td>
           <td>
@@ -3339,9 +3365,7 @@
           <td>${vaccine.name}</td>
           <td>${vaccine.recommendedAge}</td>
           <td><input type="date" value="${immunization ? immunization.dateGiven : ''}" ${immunization ? 'disabled' : ''} class="${!immunization && !isOver5Years ? 'required-field' : ''}" ${!immunization && !isOver5Years ? 'required' : ''}></td>
-          <td><input type="text" value="${immunization ? immunization.batchNumber : ''}" placeholder="Batch number" ${immunization ? 'disabled' : ''}></td>
           <td><input type="text" value="${immunization ? immunization.placeGiven : ''}" placeholder="Place given" ${immunization ? 'disabled' : ''} class="${!immunization && !isOver5Years ? 'required-field' : ''}" ${!immunization && !isOver5Years ? 'required' : ''}></td>
-          <td><input type="text" value="${immunization ? immunization.healthWorker : appData.settings.defaultHealthWorker}" placeholder="Health worker name" ${immunization ? 'disabled' : ''} class="${!immunization && !isOver5Years ? 'required-field' : ''}" ${!immunization && !isOver5Years ? 'required' : ''}></td>
           <td><input type="text" value="${immunization ? immunization.remarks : ''}" placeholder="Remarks details" ${immunization ? 'disabled' : ''}></td>
           <td>${status}</td>
           <td>
@@ -3365,16 +3389,12 @@
       const newDateGiven = prompt('Enter new date given:', immunization.dateGiven);
       if (!newDateGiven) return;
       
-      const newBatchNumber = prompt('Enter new batch number:', immunization.batchNumber || '');
       const newPlaceGiven = prompt('Enter new place given:', immunization.placeGiven || '');
-      const newHealthWorker = prompt('Enter new health worker name:', immunization.healthWorker || '');
       const newRemarks = prompt('Enter new Remarks details:', immunization.remarks || '');
       
       // Update immunization record
       immunization.dateGiven = newDateGiven;
-      immunization.batchNumber = newBatchNumber;
       immunization.placeGiven = newPlaceGiven;
-      immunization.healthWorker = newHealthWorker;
       immunization.remarks = newRemarks;
       
       saveData();
@@ -3403,8 +3423,7 @@
         <strong>Child:</strong> ${child.name} (${child.regNo}) | 
         <strong>DOB:</strong> ${formatDate(child.dob)} | 
         <strong>Age:</strong> ${calculateAge(child.dob)} |
-        <strong>Mother:</strong> ${child.motherName || 'N/A'} |
-        <strong>Father:</strong> ${child.fatherName || 'N/A'}
+        <strong>Mother:</strong> ${child.motherName || 'N/A'}
       `;
       
       // Set active view mode button
@@ -3425,9 +3444,7 @@
         row.innerHTML = `
           <td>${immunization.name}</td>
           <td>${formatDate(immunization.dateGiven)}</td>
-          <td>${immunization.batchNumber || 'N/A'}</td>
           <td>${immunization.placeGiven || 'N/A'}</td>
-          <td>${immunization.healthWorker || 'N/A'}</td>
           <td>${immunization.remarks || 'None'}</td>
         `;
         completedTableBody.appendChild(row);
@@ -3493,9 +3510,7 @@
       child.immunizations.push({
         name: vaccineName,
         dateGiven: new Date().toISOString().split('T')[0],
-        batchNumber: '',
         placeGiven: appData.settings.facilityName,
-        healthWorker: appData.settings.defaultHealthWorker,
         remarks: ''
       });
       
@@ -3558,15 +3573,13 @@
         const cells = row.querySelectorAll('td');
         const vaccineName = cells[0].textContent;
         const dateGiven = cells[2].querySelector('input').value;
-        const batchNumber = cells[3].querySelector('input').value;
-        const placeGiven = cells[4].querySelector('input').value;
-        const healthWorker = cells[5].querySelector('input').value;
-        const remarks = cells[6].querySelector('input').value;
+        const placeGiven = cells[3].querySelector('input').value;
+        const remarks = cells[4].querySelector('input').value;
         
         // Check if this vaccine is being administered (has date given)
         if (dateGiven) {
           // Validate required fields
-          if (!placeGiven || !healthWorker) {
+          if (!placeGiven) {
             hasValidationErrors = true;
             showNotification(`Please fill all required fields for ${vaccineName}`, 'error');
             return;
@@ -3575,9 +3588,7 @@
           child.immunizations.push({
             name: vaccineName,
             dateGiven: dateGiven,
-            batchNumber: batchNumber,
             placeGiven: placeGiven,
-            healthWorker: healthWorker,
             remarks: remarks
           });
         }
@@ -4074,7 +4085,6 @@
           <td>${calculateAge(child.dob)}</td>
           <td>${child.address}</td>
           <td>${child.motherName || 'N/A'}</td>
-          <td>${child.fatherName || 'N/A'}</td>
           <td>${child.contact || 'N/A'}</td>
           <td>
             <button onclick="openImmunizationModal('${child.id}')">💉 Update</button>
@@ -4161,7 +4171,6 @@
       document.getElementById('editAddress').value = child.address;
       document.getElementById('editContact').value = child.contact || '';
       document.getElementById('editMotherName').value = child.motherName || '';
-      document.getElementById('editFatherName').value = child.fatherName || '';
     }
 
     function closeEditChildModal() {
@@ -4179,7 +4188,6 @@
       child.address = document.getElementById('editAddress').value;
       child.contact = document.getElementById('editContact').value;
       child.motherName = document.getElementById('editMotherName').value;
-      child.fatherName = document.getElementById('editFatherName').value;
       
       saveData();
       updateCommunityFilter();
@@ -4194,7 +4202,7 @@
       let csvContent = "data:text/csv;charset=utf-8,";
       
       // Headers
-      csvContent += "Registration Number,Name,Date of Birth,Age,Sex,Address,Contact,Mother's Name,Father's Name,Registered Date,Vaccines Completed\n";
+      csvContent += "Registration Number,Name,Date of Birth,Age,Sex,Address,Contact,Mother's Name,Registered Date,Vaccines Completed\n";
       
       // Data
       children.forEach(child => {
@@ -4207,7 +4215,6 @@
           `"${child.address}"`,
           child.contact || '',
           `"${child.motherName || ''}"`,
-          `"${child.fatherName || ''}"`,
           formatDate(child.createdAt),
           child.immunizations.length
         ].join(',');
@@ -4323,7 +4330,6 @@
             outreachPlans: [],
             followUps: [],
             settings: {
-              defaultHealthWorker: '',
               reminderDays: 3,
               facilityName: 'Local Health Facility',
               language: 'en',
@@ -4620,14 +4626,11 @@
         address: 'Demo Community',
         contact: '0241234567',
         motherName: 'Demo Mother',
-        fatherName: 'Demo Father',
         immunizations: [
           {
             name: 'BCG',
             dateGiven: '2023-01-15',
-            batchNumber: 'BCG2023A',
             placeGiven: 'Demo Health Center',
-            healthWorker: 'Demo Health Worker',
             remarks: ''
           }
         ],
